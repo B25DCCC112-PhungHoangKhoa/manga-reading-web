@@ -168,21 +168,22 @@ export async function getMangaPillChapterPages(
       const imageUrls: string[] = [];
 
       // Extract all <img ... data-src="https://..." or src="https://...">
-      const imgRegex = /<img[^>]+(?:data-src|src)=["']([^"']+)["']/gi;
-      let imgMatch: RegExpExecArray | null;
+      const imgTagRegex = /<img\b[^>]*>/gi;
+      let match: RegExpExecArray | null;
 
-      while ((imgMatch = imgRegex.exec(html)) !== null) {
-        const src = imgMatch[1];
+      while ((match = imgTagRegex.exec(html)) !== null) {
+        const tag = match[0];
+        const dataSrcMatch = /data-(?:src|original)=["']([^"']+)["']/i.exec(tag);
+        const srcMatch = /src=["']([^"']+)["']/i.exec(tag);
+        const src = (dataSrcMatch?.[1] || srcMatch?.[1])?.trim();
+
         if (
           src &&
-          (src.includes('mpcdn.top') ||
-            src.includes('mangapill.com') ||
-            src.includes('.jpg') ||
-            src.includes('.png') ||
-            src.includes('.webp') ||
-            src.includes('.avif')) &&
+          (src.startsWith('http://') || src.startsWith('https://')) &&
           !src.includes('logo') &&
-          !src.includes('icon')
+          !src.includes('icon') &&
+          !src.includes('avatar') &&
+          !src.includes('banner')
         ) {
           imageUrls.push(src);
         }
@@ -236,3 +237,4 @@ export async function getMangaPillChapterPages(
     }
   });
 }
+

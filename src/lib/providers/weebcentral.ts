@@ -149,6 +149,7 @@ export async function getWeebcentralChapterPages(
 
   return getOrSetCache(cacheKey, 3600, async () => {
     try {
+      let html = '';
       const url = `${BASE_URL}/chapters/${cleanId}/images?is_prev=False&current_page=1&reading_style=long_strip`;
       const res = await fetch(url, {
         headers: {
@@ -158,30 +159,52 @@ export async function getWeebcentralChapterPages(
         },
       });
 
-      if (!res.ok) {
-        return {
-          chapterId,
-          chapterNumber: null,
-          title: null,
-          volume: null,
-          externalUrl: null,
-          isUnavailable: true,
-          errorMessage: `WeebCentral server returned error ${res.status}`,
-          pages: [],
-          total: 0,
-        };
+      if (res.ok) {
+        html = await res.text();
+      } else {
+        // Fallback: try direct chapter reader page
+        const fallbackRes = await fetch(`${BASE_URL}/chapters/${cleanId}`, {
+          headers: {
+            'User-Agent': USER_AGENT,
+            Referer: `${BASE_URL}/`,
+            Accept: 'text/html,application/xhtml+xml',
+          },
+        });
+        if (fallbackRes.ok) {
+          html = await fallbackRes.text();
+        } else {
+          return {
+            chapterId,
+            chapterNumber: null,
+            title: null,
+            volume: null,
+            externalUrl: null,
+            isUnavailable: true,
+            errorMessage: `WeebCentral server returned error ${res.status}`,
+            pages: [],
+            total: 0,
+          };
+        }
       }
 
-      const html = await res.text();
       const imageUrls: string[] = [];
-
-      // Extract all <img ... src="https://..." ...>
-      const imgRegex = /<img[^>]+(?:src|data-src)=["']([^"']+)["']/gi;
+      const imgTagRegex = /<img\b[^>]*>/gi;
       let imgMatch: RegExpExecArray | null;
 
-      while ((imgMatch = imgRegex.exec(html)) !== null) {
-        const src = imgMatch[1];
-        if (src && !src.includes('logo') && !src.includes('avatar') && !src.includes('icon')) {
+      while ((imgMatch = imgTagRegex.exec(html)) !== null) {
+        const tag = imgMatch[0];
+        const dataSrcMatch = /data-(?:src|original)=["']([^"']+)["']/i.exec(tag);
+        const srcMatch = /src=["']([^"']+)["']/i.exec(tag);
+        const src = (dataSrcMatch?.[1] || srcMatch?.[1])?.trim();
+
+        if (
+          src &&
+          (src.startsWith('http://') || src.startsWith('https://')) &&
+          !src.includes('logo') &&
+          !src.includes('avatar') &&
+          !src.includes('icon') &&
+          !src.includes('banner')
+        ) {
           imageUrls.push(src);
         }
       }
@@ -234,3 +257,4 @@ export async function getWeebcentralChapterPages(
     }
   });
 }
+
