@@ -64,6 +64,17 @@ export default function AnimePreviewModal({
 
   const isManga = media.type === 'MANGA';
 
+  // Find associated manga adaptation if viewing anime
+  const mangaRelation =
+    media.relations?.edges?.find(
+      (e) =>
+        e.node?.type === 'MANGA' &&
+        (e.relationType === 'ADAPTATION' || e.relationType === 'SOURCE')
+    )?.node ||
+    media.relations?.edges?.find((e) => e.node?.type === 'MANGA')?.node;
+
+  const targetMangaId = isManga ? media.id : mangaRelation?.id || media.id;
+
   return (
     <div
       role="dialog"
@@ -195,11 +206,11 @@ export default function AnimePreviewModal({
               </Link>
             ) : (
               <Link
-                href={`/manga/${media.id}`}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-bold transition-all border border-indigo-500/40"
+                href={`/manga/${targetMangaId}`}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
               >
                 <BookOpen className="w-4 h-4" />
-                Check Manga / Scanlations
+                Read Manga Adaptation
               </Link>
             )}
 
@@ -285,3 +296,4 @@ export default function AnimePreviewModal({
     </div>
   );
 }
+

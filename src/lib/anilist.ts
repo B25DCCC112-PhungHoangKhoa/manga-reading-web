@@ -59,6 +59,20 @@ const MEDIA_FIELDS = `
     timeUntilAiring
     episode
   }
+  relations {
+    edges {
+      relationType
+      node {
+        id
+        type
+        title {
+          romaji
+          english
+          native
+        }
+      }
+    }
+  }
 `;
 
 async function executeAniListQuery<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
@@ -156,21 +170,63 @@ export async function searchManga(queryText: string, page = 1, perPage = 12): Pr
 }
 
 /**
- * Fetch manga details by AniList ID (cached for 30 minutes)
+ * Fetch manga details by AniList ID (cached for 30 minutes).
+ * If an Anime ID is passed (e.g. from anime filter discovery), automatically resolves
+ * its Manga adaptation counterpart so the reader page opens seamlessly.
  */
 export async function getMangaById(id: number): Promise<AniListManga | null> {
   const cacheKey = `anilist:manga:${id}`;
   return getOrSetCache(cacheKey, 1800, async () => {
+    // Query Media without type: MANGA constraint so we can inspect both anime & manga
     const query = `
       query ($id: Int) {
-        Media(id: $id, type: MANGA) {
+        Media(id: $id) {
           ${MEDIA_FIELDS}
         }
       }
     `;
     try {
       const data = await executeAniListQuery<{ Media: AniListManga }>(query, { id });
-      return data.Media;
+      const media = data?.Media;
+      if (!media) return null;
+
+      // If it is already a Manga, return directly
+      if (media.type === 'MANGA') {
+        return media;
+      }
+
+      // If it is an ANIME, check relations for its MANGA counterpart
+      const mangaRelation =
+        media.relations?.edges?.find(
+          (edge) =>
+            edge.node?.type === 'MANGA' &&
+            (edge.relationType === 'ADAPTATION' || edge.relationType === 'SOURCE')
+        )?.node ||
+        media.relations?.edges?.find((edge) => edge.node?.type === 'MANGA')?.node;
+
+      if (mangaRelation?.id) {
+        // Fetch the corresponding manga
+        const resolvedManga = await getMangaById(mangaRelation.id);
+        if (resolvedManga) {
+          return resolvedManga;
+        }
+      }
+
+      // Fallback: search AniList by title for the manga counterpart
+      const titles = [
+        media.title.english,
+        media.title.romaji,
+        media.title.native,
+      ].filter(Boolean) as string[];
+
+      for (const t of titles) {
+        const searchResults = await searchManga(t, 1, 5);
+        if (searchResults && searchResults.length > 0) {
+          return searchResults[0];
+        }
+      }
+
+      return null;
     } catch (err) {
       console.error(`Failed to fetch manga by id ${id}:`, err);
       return null;

@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Star, BookOpen, Calendar, Tag, ArrowLeft } from 'lucide-react';
 import { getMangaById } from '@/lib/anilist';
 import { resolveMangaDexId, getMangaChapters, getMangaEditions } from '@/lib/mangadex';
@@ -24,6 +24,11 @@ export default async function MangaDetailPage({ params }: PageProps) {
   const manga = await getMangaById(anilistId);
   if (!manga) {
     notFound();
+  }
+
+  // If the user arrived via an Anime ID (e.g. /manga/21), redirect to the canonical Manga ID (/manga/30013)
+  if (manga.id !== anilistId) {
+    redirect(`/manga/${manga.id}`);
   }
 
   const title =

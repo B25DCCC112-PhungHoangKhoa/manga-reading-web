@@ -60,6 +60,16 @@ export interface AniListManga {
     month?: number;
     day?: number;
   } | null;
+  relations?: {
+    edges?: {
+      relationType?: string;
+      node?: {
+        id: number;
+        type?: 'ANIME' | 'MANGA';
+        title?: MangaTitle;
+      };
+    }[];
+  };
 }
 
 export type AniListMedia = AniListManga;
