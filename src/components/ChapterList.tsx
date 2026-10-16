@@ -122,8 +122,41 @@ export default function ChapterList({
     }
   };
 
+  // Find if a colored/in-app edition exists
+  const coloredEdition = useMemo(() => {
+    return editions.find((e) => e.isColored);
+  }, [editions]);
+
   return (
     <div className="w-full bg-zinc-900/60 rounded-2xl border border-zinc-800/80 p-5 md:p-6 backdrop-blur-md">
+      {/* Colored Edition Promo Banner for titles like One Piece */}
+      {coloredEdition && selectedEditionId !== coloredEdition.id && (
+        <div className="mb-5 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-violet-950/80 via-indigo-950/80 to-zinc-900 border border-indigo-500/40 flex items-center justify-between gap-3 flex-wrap shadow-lg shadow-indigo-500/10 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-amber-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 fill-amber-400/20" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                Full In-App Edition Available
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 font-semibold uppercase">
+                  Recommended
+                </span>
+              </p>
+              <p className="text-[11px] text-zinc-300 mt-0.5">
+                Switch to <strong>{coloredEdition.title}</strong> to read 760+ chapters directly on this website with full color pages!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => handleEditionChange(coloredEdition.id)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold transition-all hover:scale-102 active:scale-98 shadow-md shadow-indigo-600/30"
+          >
+            Switch to In-App Edition 🎨
+          </button>
+        </div>
+      )}
+
       {/* Header Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-zinc-800">
         <div className="flex items-center gap-3">
@@ -314,27 +347,18 @@ export default function ChapterList({
                   </div>
                 </div>
 
-                {/* Action Buttons: In-App Reader (Always) + Optional External Link */}
+                {/* Action Buttons */}
                 <div className="shrink-0 flex items-center gap-2">
                   {hasExternal ? (
-                    <>
-                      <Link
-                        href={`/read/${ch.id}?mangaId=${mangaId}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-sm transition-all hover:scale-102 active:scale-95"
-                      >
-                        <Sparkles className="w-3 h-3 text-amber-300" />
-                        <span>Read In-App</span>
-                      </Link>
-                      <a
-                        href={ch.externalUrl!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-amber-400 border border-zinc-700 text-xs transition-colors"
-                        title="Open in official MangaPlus tab"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </>
+                    <a
+                      href={ch.externalUrl!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all hover:scale-102 active:scale-98"
+                    >
+                      <span>Read on MangaPlus</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   ) : (
                     <Link
                       href={`/read/${ch.id}?mangaId=${mangaId}`}
