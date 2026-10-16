@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Star, BookOpen, Calendar, Tag, ArrowLeft } from 'lucide-react';
 import { getMangaById } from '@/lib/anilist';
-import { resolveMangaDexId, getMangaChapters, getMangaEditions } from '@/lib/mangadex';
+import {
+  resolveMangaDexId,
+  getMangaChapters,
+  getMangaEditions,
+  getMergedWithAlternativeChapters,
+} from '@/lib/mangadex';
 import ChapterList from '@/components/ChapterList';
 
 export const revalidate = 900; // Cache page for 15 minutes
@@ -68,13 +73,18 @@ export default async function MangaDetailPage({ params }: PageProps) {
     editions = foundEditions;
 
     if (mangadexId) {
-      chapters = await getMangaChapters(mangadexId, 100);
+      chapters = await getMangaChapters(mangadexId, 500);
     }
+
+    // Fallback: If manga couldn't load chapters, or is missing remaining chapters,
+    // seamlessly supplement them from the alternative API provider
+    const merged = await getMergedWithAlternativeChapters(titles, chapters);
+    chapters = merged.chapters;
   } catch (err) {
-    console.error('Error fetching MangaDex chapters:', err);
+    console.error('Error fetching manga chapters:', err);
   }
 
-  // If no chapters or companion editions exist on MangaDex, consider it unavailable
+  // If no chapters or companion editions exist on MangaDex or alternative API, consider it unavailable
   if (chapters.length === 0 && editions.length === 0) {
     notFound();
   }

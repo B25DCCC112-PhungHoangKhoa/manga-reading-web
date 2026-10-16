@@ -1,5 +1,11 @@
 import { getOrSetCache } from './cache';
 import { ChapterPagesResponse, MangaDexChapter, AniListManga } from './types';
+import {
+  getAlternativeChapterPages,
+  getMergedWithAlternativeChapters,
+} from './fallbackManga';
+
+export { getAlternativeChapterPages, getMergedWithAlternativeChapters };
 
 const MANGADEX_API = 'https://api.mangadex.org';
 const USER_AGENT = 'MangaWeb/1.0 (https://github.com/mangaweb)';
@@ -291,7 +297,7 @@ export async function filterAvailableManga(
  */
 export async function getMangaChapters(
   mangaDexId: string,
-  limit = 100,
+  limit = 500,
   offset = 0,
   preferredLanguage?: string
 ): Promise<MangaDexChapter[]> {
@@ -317,6 +323,29 @@ export async function getMangaChapters(
 
     const json = (await res.json()) as MangaDexApiResponse<MangaDexChapterItem[]>;
     let rawChapters = json.data || [];
+
+    // Paginate through remaining chapters if total > 500
+    const total = json.total || rawChapters.length;
+    if (total > rawChapters.length && rawChapters.length >= 500 && offset === 0) {
+      const remainingBatches = Math.min(Math.ceil((total - rawChapters.length) / 500), 5); // Up to 3000 chapters
+      for (let i = 1; i <= remainingBatches; i++) {
+        try {
+          const nextOffset = i * 500;
+          const nextUrl = `${MANGADEX_API}/manga/${mangaDexId}/feed?order[chapter]=desc&limit=500&offset=${nextOffset}&includes[]=scanlation_group${langParam}${ratings}`;
+          const nextRes = await fetch(nextUrl, { headers: { 'User-Agent': USER_AGENT } });
+          if (nextRes.ok) {
+            const nextJson = (await nextRes.json()) as MangaDexApiResponse<MangaDexChapterItem[]>;
+            if (nextJson.data && nextJson.data.length > 0) {
+              rawChapters.push(...nextJson.data);
+            } else {
+              break;
+            }
+          }
+        } catch {
+          break;
+        }
+      }
+    }
 
     // 2. Language Fallback: If 0 English chapters found, fetch all available languages
     if (rawChapters.length === 0 && (!preferredLanguage || preferredLanguage === 'en')) {
@@ -347,6 +376,7 @@ export async function getMangaChapters(
         pages: item.attributes.pages,
         publishAt: item.attributes.publishAt,
         scanlationGroup: groupRel?.attributes?.name,
+        sourceProvider: 'MangaDex',
       };
     });
 
@@ -365,9 +395,14 @@ export async function getMangaChapters(
 }
 
 /**
- * Fetch chapter pages from MangaDex @Home server
+ * Fetch chapter pages from MangaDex @Home server or alternative fallback server
  */
 export async function getChapterPages(chapterId: string): Promise<ChapterPagesResponse> {
+  // 0. If the chapter is from the alternative provider, load directly from alternative server
+  if (chapterId.startsWith('comick-') || chapterId.startsWith('fallback-')) {
+    return getAlternativeChapterPages(chapterId);
+  }
+
   const cacheKey = `mangadex:pages:${chapterId}`;
   return getOrSetCache(cacheKey, 1800, async () => {
     // 1. Fetch chapter metadata

@@ -118,6 +118,7 @@ export interface MangaDexChapter {
   pages: number;
   publishAt: string;
   scanlationGroup?: string | null;
+  sourceProvider?: string | null;
 }
 
 export interface ChapterPagesResponse {

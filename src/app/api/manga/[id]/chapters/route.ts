@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMangaById } from '@/lib/anilist';
-import { getMangaChapters, resolveMangaDexId, getMangaEditions } from '@/lib/mangadex';
+import {
+  getMangaChapters,
+  resolveMangaDexId,
+  getMangaEditions,
+  getMergedWithAlternativeChapters,
+} from '@/lib/mangadex';
 
 export const runtime = 'nodejs';
 
@@ -11,12 +16,13 @@ export async function GET(
   try {
     const { id } = await context.params;
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '100', 10), 500);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '500', 10), 500);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const language = searchParams.get('lang') || undefined;
 
     let mangadexId: string | null = null;
     let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
+    let titles: string[] = [];
 
     // Check if ID is UUID (direct MangaDex ID) or integer (AniList ID)
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -34,7 +40,7 @@ export async function GET(
         return NextResponse.json({ success: false, error: 'Manga not found' }, { status: 404 });
       }
 
-      const titles = [
+      titles = [
         manga.title.english,
         manga.title.romaji,
         manga.title.native,
@@ -52,17 +58,16 @@ export async function GET(
       editions = await getMangaEditions(anilistId, titles);
     }
 
-    if (!mangadexId) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-        mangadexId: null,
-        editions: [],
-        message: 'No MangaDex mapping found for this manga',
-      });
+    let chapters: Awaited<ReturnType<typeof getMangaChapters>> = [];
+    if (mangadexId) {
+      chapters = await getMangaChapters(mangadexId, limit, offset, language);
     }
 
-    const chapters = await getMangaChapters(mangadexId, limit, offset, language);
+    // Merge with alternative API for any missing or remaining chapters
+    if (offset === 0 && titles.length > 0) {
+      const merged = await getMergedWithAlternativeChapters(titles, chapters);
+      chapters = merged.chapters;
+    }
 
     return NextResponse.json({
       success: true,

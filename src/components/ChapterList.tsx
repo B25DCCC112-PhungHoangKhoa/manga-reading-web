@@ -241,6 +241,18 @@ export default function ChapterList({
         </div>
       </div>
 
+      {/* Fallback Alternative Server Banner if active */}
+      {chapters.some((c) => c.sourceProvider?.includes('Alternative')) && (
+        <div className="mt-4 p-3 rounded-xl bg-violet-950/40 border border-violet-500/30 flex items-center justify-between text-xs text-violet-200 shadow-sm animate-in fade-in duration-200">
+          <span className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-400 shrink-0" />
+            <span>
+              <strong>Multi-Source Fallback Active:</strong> Missing and unlisted chapters have been automatically supplemented from alternative servers.
+            </span>
+          </span>
+        </div>
+      )}
+
       {/* Chapters Table or Informative Empty State */}
       <div className="mt-4 divide-y divide-zinc-800/60 max-h-[600px] overflow-y-auto pr-1 relative">
         {isLoadingEdition ? (
@@ -320,6 +332,11 @@ export default function ChapterList({
                       {ch.translatedLanguage && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 uppercase">
                           {ch.translatedLanguage}
+                        </span>
+                      )}
+                      {ch.sourceProvider?.includes('Alternative') && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                          ⚡ Alternative Server
                         </span>
                       )}
                       {ch.title && (
