@@ -73,7 +73,7 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
 export async function getWeebcentralChapters(
   mangaId: string
 ): Promise<MangaDexChapter[]> {
-  const cacheKey = `weebcentral:chapters:${mangaId}`;
+  const cacheKey = `weebcentral:chapters:v2:${mangaId}`;
   return getOrSetCache(cacheKey, 1800, async () => {
     try {
       const url = `${BASE_URL}/series/${mangaId}/full-chapter-list`;
@@ -98,9 +98,27 @@ export async function getWeebcentralChapters(
         const chapterId = match[1];
         const content = match[2];
 
-        // Extract chapter number
-        const numMatch = /(?:Chapter|Ch\.)?\s*([0-9.]+)/i.exec(content);
+        // Clean text content by removing time tags and other HTML tags to prevent matching CSS classes
+        const cleanText = content
+          .replace(/<time[\s\S]*?<\/time>/gi, '')
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        // Extract chapter number: look for Chapter / Ch. first, then Episode, then any standalone number
+        const numMatch =
+          /\b(?:Chapter|Ch\.?)\s*([0-9.]+)/i.exec(cleanText) ||
+          /\b(?:Episode|Ep\.?)\s*([0-9.]+)/i.exec(cleanText) ||
+          /\b([0-9]+(?:\.[0-9]+)?)\b/.exec(cleanText);
         const chapterNum = numMatch ? numMatch[1] : null;
+
+        // Extract chapter title if present
+        let title: string | null = null;
+        if (cleanText.includes(':')) {
+          title = cleanText.split(':')[1].trim();
+        } else if (cleanText.includes(' - ')) {
+          title = cleanText.split(' - ')[1].trim();
+        }
 
         // Extract date if present
         const timeMatch = /datetime=["']([^"']+)["']/i.exec(content);
@@ -110,7 +128,7 @@ export async function getWeebcentralChapters(
           id: `weebcentral-${chapterId}`,
           chapter: chapterNum,
           volume: null,
-          title: null,
+          title,
           translatedLanguage: 'en',
           externalUrl: null,
           pages: 1,

@@ -69,7 +69,7 @@ export async function searchMangaPill(titles: string[]): Promise<string | null> 
 export async function getMangaPillChapters(
   mangaPath: string
 ): Promise<MangaDexChapter[]> {
-  const cacheKey = `mangapill:chapters:${mangaPath}`;
+  const cacheKey = `mangapill:chapters:v2:${mangaPath}`;
   return getOrSetCache(cacheKey, 1800, async () => {
     try {
       const url = `${BASE_URL}/manga/${mangaPath}`;
@@ -92,10 +92,13 @@ export async function getMangaPillChapters(
 
       while ((match = regex.exec(html)) !== null) {
         const chapterPath = match[1];
-        const content = match[2].replace(/<[^>]*>/g, '').trim();
+        const content = match[2].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
         // Extract chapter number from text or path
-        const numMatch = /(?:Chapter|Ch\.)?\s*([0-9.]+)/i.exec(content);
+        const numMatch =
+          /\b(?:Chapter|Ch\.?)\s*([0-9.]+)/i.exec(content) ||
+          /\b(?:Episode|Ep\.?)\s*([0-9.]+)/i.exec(content) ||
+          /\b([0-9]+(?:\.[0-9]+)?)\b/.exec(content);
         const chapterNum = numMatch ? numMatch[1] : null;
 
         chapters.push({
