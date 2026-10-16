@@ -58,7 +58,7 @@ export async function GET(
       editions = await getMangaEditions(anilistId, titles);
     }
 
-    const provider = (searchParams.get('provider') as 'all' | 'mangadex' | 'weebcentral' | 'mangapill') || 'all';
+    const provider = (searchParams.get('provider') as 'all' | 'mangadex' | 'weebcentral' | 'mangapill') || 'mangadex';
 
     const chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, provider);
 

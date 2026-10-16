@@ -61,6 +61,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
   let chapters: Awaited<ReturnType<typeof getCompleteChaptersAcrossProviders>> = [];
   let mangadexId: string | null = null;
   let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
+  let initialProvider: 'mangadex' | 'weebcentral' | 'mangapill' | 'all' = 'mangadex';
 
   try {
     const [resolvedId, foundEditions] = await Promise.all([
@@ -71,8 +72,18 @@ export default async function MangaDetailPage({ params }: PageProps) {
     mangadexId = resolvedId;
     editions = foundEditions;
 
-    // Fetch full chapter catalog across MangaDex, WeebCentral, MangaPill, and Comick
-    chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'all');
+    // Fast initial load: Fetch chapters from MangaDex (default provider)
+    if (mangadexId) {
+      chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'mangadex');
+    }
+
+    // Fallback: If MangaDex has no chapters or no ID, check if alternative providers have chapters
+    if (chapters.length === 0) {
+      chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'all');
+      if (chapters.length > 0) {
+        initialProvider = 'all';
+      }
+    }
   } catch (err) {
     console.error('Error fetching manga chapters across providers:', err);
   }
@@ -233,6 +244,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
             mangaTitle={title}
             editions={editions}
             initialMangaDexId={mangadexId || undefined}
+            initialProvider={initialProvider}
           />
         </div>
       </div>

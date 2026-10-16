@@ -24,6 +24,7 @@ interface ChapterListProps {
   mangaTitle?: string;
   editions?: MangaEdition[];
   initialMangaDexId?: string;
+  initialProvider?: 'mangadex' | 'weebcentral' | 'mangapill' | 'all';
 }
 
 export default function ChapterList({
@@ -32,10 +33,11 @@ export default function ChapterList({
   mangaTitle = 'this manga',
   editions = [],
   initialMangaDexId,
+  initialProvider = 'mangadex',
 }: ChapterListProps) {
   const [chapters, setChapters] = useState<MangaDexChapter[]>(initialChapters);
   const [selectedEditionId, setSelectedEditionId] = useState<string>(
-    initialMangaDexId || editions[0]?.id || ''
+    initialProvider || 'mangadex'
   );
   const [isLoadingEdition, setIsLoadingEdition] = useState(false);
   const [search, setSearch] = useState('');
@@ -45,7 +47,10 @@ export default function ChapterList({
   // Sync initial chapters if props change
   useEffect(() => {
     setChapters(initialChapters);
-  }, [initialChapters]);
+    if (initialProvider) {
+      setSelectedEditionId(initialProvider);
+    }
+  }, [initialChapters, initialProvider]);
 
   // Handle switching provider / edition / server
   const handleEditionChange = async (val: string) => {
@@ -177,7 +182,18 @@ export default function ChapterList({
               </span>
             </h3>
             <p className="text-xs text-zinc-400">
-              Fetched dynamically via MangaDex API
+              Provider:{' '}
+              <span className="text-zinc-300 font-medium">
+                {selectedEditionId === 'mangadex'
+                  ? 'MangaDex (Default)'
+                  : selectedEditionId === 'weebcentral'
+                  ? 'WeebCentral'
+                  : selectedEditionId === 'mangapill'
+                  ? 'MangaPill'
+                  : selectedEditionId === 'all'
+                  ? 'All Providers (Merged)'
+                  : editions.find((e) => e.id === selectedEditionId)?.title || 'MangaDex'}
+              </span>
             </p>
           </div>
         </div>
@@ -192,10 +208,10 @@ export default function ChapterList({
             disabled={isLoadingEdition}
             className="bg-zinc-800 text-xs text-zinc-200 font-semibold px-2.5 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-50"
           >
-            <option value="all">⚡ All Providers (Complete)</option>
-            <option value="mangadex">MangaDex</option>
+            <option value="mangadex">MangaDex (Default)</option>
             <option value="weebcentral">WeebCentral</option>
             <option value="mangapill">MangaPill</option>
+            <option value="all">⚡ All Providers (Merged)</option>
             {editions.map((ed) => (
               <option key={ed.id} value={ed.id}>
                 {ed.title} {ed.isColored ? '🎨' : ''}
@@ -276,12 +292,39 @@ export default function ChapterList({
 
             <div>
               <h4 className="text-base font-bold text-zinc-200">
-                No chapters currently available on MangaDex
+                {selectedEditionId === 'mangadex'
+                  ? 'No chapters currently available on MangaDex'
+                  : 'No chapters found for this provider'}
               </h4>
               <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
-                AniList indexes virtually all published manga, manhwa, and light novels, but MangaDex relies on scanlation teams uploading files. This series currently does not have scanlated chapters hosted on MangaDex.
+                {selectedEditionId === 'mangadex'
+                  ? 'MangaDex does not host chapters for this series. You can switch to WeebCentral or MangaPill to check for available chapters!'
+                  : 'Try selecting a different provider from the dropdown to check for available chapters.'}
               </p>
             </div>
+
+            {selectedEditionId === 'mangadex' && (
+              <div className="pt-2 flex flex-wrap gap-2 justify-center">
+                <button
+                  onClick={() => handleEditionChange('weebcentral')}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                >
+                  Check WeebCentral
+                </button>
+                <button
+                  onClick={() => handleEditionChange('mangapill')}
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
+                >
+                  Check MangaPill
+                </button>
+                <button
+                  onClick={() => handleEditionChange('all')}
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
+                >
+                  Check All Providers
+                </button>
+              </div>
+            )}
 
             <div className="p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800 text-left text-xs text-zinc-400 space-y-1.5">
               <div className="flex items-center gap-1.5 text-zinc-300 font-semibold">
