@@ -32,11 +32,70 @@ export interface AniListManga {
   chapters?: number | null;
   volumes?: number | null;
   format?: string | null;
+  type?: 'ANIME' | 'MANGA';
+  episodes?: number | null;
+  duration?: number | null;
+  season?: string | null;
+  seasonYear?: number | null;
+  source?: string | null;
+  isAdult?: boolean;
+  studios?: {
+    nodes?: {
+      id: number;
+      name: string;
+    }[];
+  };
+  trailer?: {
+    id?: string;
+    site?: string;
+    thumbnail?: string;
+  } | null;
+  nextAiringEpisode?: {
+    airingAt: number;
+    timeUntilAiring: number;
+    episode: number;
+  } | null;
   startDate?: {
     year?: number;
     month?: number;
     day?: number;
   } | null;
+}
+
+export type AniListMedia = AniListManga;
+
+export interface PageInfo {
+  total: number;
+  perPage: number;
+  currentPage: number;
+  lastPage: number;
+  hasNextPage: boolean;
+}
+
+export interface AnimeFilterOptions {
+  search?: string;
+  type?: 'ANIME' | 'MANGA';
+  genres?: string[];
+  format?: string[];
+  status?: string;
+  year?: number;
+  yearMin?: number;
+  yearMax?: number;
+  season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL' | 'ALL';
+  minScore?: number;
+  ageRating?: string;
+  source?: string[];
+  episodes?: string;
+  sort?: string;
+  page?: number;
+  perPage?: number;
+}
+
+export interface DiscoverApiResponse {
+  success: boolean;
+  data: AniListMedia[];
+  pageInfo: PageInfo;
+  error?: string;
 }
 
 export interface MangaDexChapter {

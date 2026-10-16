@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Search, X, Star, Flame, Compass } from 'lucide-react';
+import { BookOpen, Search, X, Star, Flame, Compass, SlidersHorizontal } from 'lucide-react';
 import { AniListManga } from '@/lib/types';
 
 export default function Navbar() {
@@ -107,20 +107,27 @@ export default function Navbar() {
             <Compass className="w-4 h-4 text-indigo-400" />
             Discover
           </Link>
-          <a
-            href="#trending"
+          <Link
+            href="/browse"
+            className="hover:text-white transition-colors flex items-center gap-1.5 text-indigo-300 font-semibold"
+          >
+            <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+            Browse & Filter
+          </Link>
+          <Link
+            href="/#trending"
             className="hover:text-white transition-colors flex items-center gap-1.5"
           >
             <Flame className="w-4 h-4 text-amber-400" />
             Trending
-          </a>
-          <a
-            href="#latest"
+          </Link>
+          <Link
+            href="/#latest"
             className="hover:text-white transition-colors flex items-center gap-1.5"
           >
             <Star className="w-4 h-4 text-pink-400" />
             Latest
-          </a>
+          </Link>
         </nav>
 
         {/* Search Bar & Dropdown */}
