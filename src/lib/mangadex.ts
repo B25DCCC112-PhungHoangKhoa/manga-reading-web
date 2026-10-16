@@ -319,39 +319,84 @@ export async function getChapterPages(chapterId: string): Promise<ChapterPagesRe
     }
 
     // 3. Fetch at-home server endpoint
-    const atHomeRes = await fetch(`${MANGADEX_API}/at-home/server/${chapterId}`, {
-      headers: { 'User-Agent': USER_AGENT },
-    });
+    try {
+      const atHomeRes = await fetch(`${MANGADEX_API}/at-home/server/${chapterId}`, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
 
-    if (!atHomeRes.ok) {
-      throw new Error(`MangaDex @home error (${atHomeRes.status}): ${await atHomeRes.text()}`);
-    }
+      if (!atHomeRes.ok) {
+        return {
+          chapterId,
+          chapterNumber: chapterData.attributes.chapter,
+          title: chapterData.attributes.title,
+          volume: chapterData.attributes.volume,
+          externalUrl: null,
+          isUnavailable: true,
+          errorMessage:
+            atHomeRes.status === 404
+              ? 'The image files for this upload have been removed from MangaDex servers (likely due to a publisher copyright takedown).'
+              : `MangaDex @Home server returned error ${atHomeRes.status}`,
+          pages: [],
+          total: 0,
+          mangaId,
+        };
+      }
 
-    const atHomeJson = await atHomeRes.json();
-    const baseUrl = atHomeJson.baseUrl;
-    const hash = atHomeJson.chapter.hash;
-    const files: string[] = atHomeJson.chapter.data || [];
+      const atHomeJson = await atHomeRes.json();
+      const baseUrl = atHomeJson.baseUrl;
+      const hash = atHomeJson.chapter?.hash;
+      const files: string[] = atHomeJson.chapter?.data || [];
 
-    // Map to pages with proxied URLs to prevent CORS / 403 Forbidden
-    const pages = files.map((filename, index) => {
-      const originalUrl = `${baseUrl}/data/${hash}/${filename}`;
-      const proxiedUrl = `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
+      if (!baseUrl || !hash || files.length === 0) {
+        return {
+          chapterId,
+          chapterNumber: chapterData.attributes.chapter,
+          title: chapterData.attributes.title,
+          volume: chapterData.attributes.volume,
+          externalUrl: null,
+          isUnavailable: true,
+          errorMessage: 'No page images available in this chapter release.',
+          pages: [],
+          total: 0,
+          mangaId,
+        };
+      }
+
+      // Map to pages with proxied URLs to prevent CORS / 403 Forbidden
+      const pages = files.map((filename, index) => {
+        const originalUrl = `${baseUrl}/data/${hash}/${filename}`;
+        const proxiedUrl = `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
+        return {
+          pageNumber: index + 1,
+          url: proxiedUrl,
+          originalUrl,
+        };
+      });
+
       return {
-        pageNumber: index + 1,
-        url: proxiedUrl,
-        originalUrl,
+        chapterId,
+        chapterNumber: chapterData.attributes.chapter,
+        title: chapterData.attributes.title,
+        volume: chapterData.attributes.volume,
+        externalUrl: null,
+        pages,
+        total: pages.length,
+        mangaId,
       };
-    });
-
-    return {
-      chapterId,
-      chapterNumber: chapterData.attributes.chapter,
-      title: chapterData.attributes.title,
-      volume: chapterData.attributes.volume,
-      externalUrl: null,
-      pages,
-      total: pages.length,
-      mangaId,
-    };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return {
+        chapterId,
+        chapterNumber: chapterData.attributes.chapter,
+        title: chapterData.attributes.title,
+        volume: chapterData.attributes.volume,
+        externalUrl: null,
+        isUnavailable: true,
+        errorMessage: `Failed to connect to MangaDex @Home: ${message}`,
+        pages: [],
+        total: 0,
+        mangaId,
+      };
+    }
   });
 }

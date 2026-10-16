@@ -19,9 +19,21 @@ export default async function ChapterReaderPage({ params, searchParams }: PagePr
   let chapterData;
   try {
     chapterData = await getChapterPages(chapterId);
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Failed to load chapter pages:', err);
-    notFound();
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    chapterData = {
+      chapterId,
+      chapterNumber: null,
+      title: null,
+      volume: null,
+      externalUrl: null,
+      isUnavailable: true,
+      errorMessage: `Could not load chapter pages: ${message}`,
+      pages: [],
+      total: 0,
+      mangaId,
+    };
   }
 
   return (

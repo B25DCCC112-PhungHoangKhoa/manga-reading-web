@@ -57,6 +57,8 @@ export interface ChapterPagesResponse {
   title: string | null;
   volume: string | null;
   externalUrl: string | null;
+  isUnavailable?: boolean;
+  errorMessage?: string;
   pages: {
     pageNumber: number;
     url: string;
