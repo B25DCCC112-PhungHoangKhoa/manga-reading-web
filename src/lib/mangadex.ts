@@ -1,5 +1,5 @@
 import { getOrSetCache } from './cache';
-import { ChapterPagesResponse, MangaDexChapter } from './types';
+import { ChapterPagesResponse, MangaDexChapter, AniListManga } from './types';
 
 const MANGADEX_API = 'https://api.mangadex.org';
 const USER_AGENT = 'MangaWeb/1.0 (https://github.com/mangaweb)';
@@ -236,6 +236,52 @@ export async function getMangaEditions(
       return [];
     }
   });
+}
+
+/**
+ * Checks if a manga has at least 1 chapter available on MangaDex
+ */
+export async function isMangaAvailable(
+  anilistId: number,
+  titles: string[]
+): Promise<boolean> {
+  const cacheKey = `mangadex:available:${anilistId}`;
+  return getOrSetCache(cacheKey, 86400, async () => {
+    try {
+      const mangadexId = await resolveMangaDexId(anilistId, titles);
+      if (!mangadexId) return false;
+
+      const feedUrl = `${MANGADEX_API}/manga/${mangadexId}/feed?limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+      const res = await fetch(feedUrl, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      if (!res.ok) return false;
+      const json = await res.json();
+      const total = json.total || json.data?.length || 0;
+      return total > 0;
+    } catch {
+      return false;
+    }
+  });
+}
+
+/**
+ * Filters an AniList manga list, completely removing any titles that have 0 chapters on MangaDex
+ */
+export async function filterAvailableManga(
+  list: AniListManga[]
+): Promise<AniListManga[]> {
+  if (!list || list.length === 0) return [];
+
+  const checks = await Promise.all(
+    list.map(async (m) => {
+      const titles = [m.title.english, m.title.romaji, m.title.native].filter(Boolean) as string[];
+      const available = await isMangaAvailable(m.id, titles);
+      return available ? m : null;
+    })
+  );
+
+  return checks.filter(Boolean) as AniListManga[];
 }
 
 /**

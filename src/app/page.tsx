@@ -5,6 +5,7 @@ import { getTrendingManga, getLatestManga } from '@/lib/anilist';
 import { Flame, Sparkles } from 'lucide-react';
 
 import { AniListManga } from '@/lib/types';
+import { filterAvailableManga } from '@/lib/mangadex';
 
 export const revalidate = 600; // ISR cache for 10 minutes
 
@@ -13,12 +14,18 @@ export default async function HomePage() {
   let latestManga: AniListManga[] = [];
 
   try {
-    const [trending, latest] = await Promise.all([
-      getTrendingManga(1, 18),
-      getLatestManga(1, 12),
+    const [rawTrending, rawLatest] = await Promise.all([
+      getTrendingManga(1, 24),
+      getLatestManga(1, 20),
     ]);
-    trendingManga = trending;
-    latestManga = latest;
+
+    const [filteredTrending, filteredLatest] = await Promise.all([
+      filterAvailableManga(rawTrending),
+      filterAvailableManga(rawLatest),
+    ]);
+
+    trendingManga = filteredTrending.slice(0, 18);
+    latestManga = filteredLatest.slice(0, 12);
   } catch (err) {
     console.error('Failed to fetch home page manga:', err);
   }

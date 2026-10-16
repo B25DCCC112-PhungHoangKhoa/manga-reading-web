@@ -69,6 +69,11 @@ export default async function MangaDetailPage({ params }: PageProps) {
     console.error('Error fetching MangaDex chapters:', err);
   }
 
+  // If no chapters or companion editions exist on MangaDex, consider it unavailable
+  if (chapters.length === 0 && editions.length === 0) {
+    notFound();
+  }
+
   // Clean HTML from synopsis
   const cleanSynopsis = manga.description
     ? manga.description.replace(/<[^>]*>/g, '')

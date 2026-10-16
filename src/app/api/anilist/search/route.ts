@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchManga } from '@/lib/anilist';
 
+import { filterAvailableManga } from '@/lib/mangadex';
+
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
@@ -14,7 +16,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    const data = await searchManga(query, page, perPage);
+    const rawData = await searchManga(query, page, perPage);
+    const data = await filterAvailableManga(rawData);
     return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
