@@ -4,8 +4,19 @@ import {
   getAlternativeChapterPages,
   getMergedWithAlternativeChapters,
 } from './fallbackManga';
+import {
+  getWeebcentralChapterPages,
+  getMangaPillChapterPages,
+  getCompleteChaptersAcrossProviders,
+} from './providers';
 
-export { getAlternativeChapterPages, getMergedWithAlternativeChapters };
+export {
+  getAlternativeChapterPages,
+  getMergedWithAlternativeChapters,
+  getWeebcentralChapterPages,
+  getMangaPillChapterPages,
+  getCompleteChaptersAcrossProviders,
+};
 
 const MANGADEX_API = 'https://api.mangadex.org';
 const USER_AGENT = 'MangaWeb/1.0 (https://github.com/mangaweb)';
@@ -398,7 +409,13 @@ export async function getMangaChapters(
  * Fetch chapter pages from MangaDex @Home server or alternative fallback server
  */
 export async function getChapterPages(chapterId: string): Promise<ChapterPagesResponse> {
-  // 0. If the chapter is from the alternative provider, load directly from alternative server
+  // 0. If the chapter is from WeebCentral, MangaPill, or Comick, route directly
+  if (chapterId.startsWith('weebcentral-')) {
+    return getWeebcentralChapterPages(chapterId);
+  }
+  if (chapterId.startsWith('mangapill-')) {
+    return getMangaPillChapterPages(chapterId);
+  }
   if (chapterId.startsWith('comick-') || chapterId.startsWith('fallback-')) {
     return getAlternativeChapterPages(chapterId);
   }

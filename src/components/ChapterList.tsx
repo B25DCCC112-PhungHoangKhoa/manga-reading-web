@@ -47,12 +47,18 @@ export default function ChapterList({
     setChapters(initialChapters);
   }, [initialChapters]);
 
-  // Handle switching edition / server
-  const handleEditionChange = async (editionId: string) => {
-    setSelectedEditionId(editionId);
+  // Handle switching provider / edition / server
+  const handleEditionChange = async (val: string) => {
+    setSelectedEditionId(val);
     setIsLoadingEdition(true);
     try {
-      const res = await fetch(`/api/manga/${mangaId}/chapters?mangadexId=${editionId}`);
+      let url = `/api/manga/${mangaId}/chapters`;
+      if (['all', 'mangadex', 'weebcentral', 'mangapill'].includes(val)) {
+        url += `?provider=${val}`;
+      } else {
+        url += `?mangadexId=${val}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -60,7 +66,7 @@ export default function ChapterList({
         }
       }
     } catch (err) {
-      console.error('Failed to switch edition:', err);
+      console.error('Failed to switch provider/edition:', err);
     } finally {
       setIsLoadingEdition(false);
     }
@@ -176,25 +182,27 @@ export default function ChapterList({
           </div>
         </div>
 
-        {/* Multi-Edition / Server Switcher */}
-        {editions.length > 1 && (
-          <div className="flex items-center gap-2 bg-zinc-950/80 p-1.5 rounded-xl border border-zinc-800">
-            <Server className="w-3.5 h-3.5 text-indigo-400 ml-1.5 shrink-0" />
-            <span className="text-xs font-medium text-zinc-400">Edition / Source:</span>
-            <select
-              value={selectedEditionId}
-              onChange={(e) => handleEditionChange(e.target.value)}
-              disabled={isLoadingEdition}
-              className="bg-zinc-800 text-xs text-zinc-200 font-semibold px-2.5 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-50"
-            >
-              {editions.map((ed) => (
-                <option key={ed.id} value={ed.id}>
-                  {ed.title} {ed.isColored ? '🎨' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Multi-Provider / Edition Switcher */}
+        <div className="flex items-center gap-2 bg-zinc-950/80 p-1.5 rounded-xl border border-zinc-800">
+          <Server className="w-3.5 h-3.5 text-indigo-400 ml-1.5 shrink-0" />
+          <span className="text-xs font-medium text-zinc-400">Provider:</span>
+          <select
+            value={selectedEditionId}
+            onChange={(e) => handleEditionChange(e.target.value)}
+            disabled={isLoadingEdition}
+            className="bg-zinc-800 text-xs text-zinc-200 font-semibold px-2.5 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-50"
+          >
+            <option value="all">⚡ All Providers (Complete)</option>
+            <option value="mangadex">MangaDex</option>
+            <option value="weebcentral">WeebCentral</option>
+            <option value="mangapill">MangaPill</option>
+            {editions.map((ed) => (
+              <option key={ed.id} value={ed.id}>
+                {ed.title} {ed.isColored ? '🎨' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Search, Language & Sort Controls */}
         <div className="flex items-center gap-2.5 flex-wrap">

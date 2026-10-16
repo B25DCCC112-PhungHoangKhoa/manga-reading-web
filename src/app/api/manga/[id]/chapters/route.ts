@@ -4,7 +4,7 @@ import {
   getMangaChapters,
   resolveMangaDexId,
   getMangaEditions,
-  getMergedWithAlternativeChapters,
+  getCompleteChaptersAcrossProviders,
 } from '@/lib/mangadex';
 
 export const runtime = 'nodejs';
@@ -58,16 +58,9 @@ export async function GET(
       editions = await getMangaEditions(anilistId, titles);
     }
 
-    let chapters: Awaited<ReturnType<typeof getMangaChapters>> = [];
-    if (mangadexId) {
-      chapters = await getMangaChapters(mangadexId, limit, offset, language);
-    }
+    const provider = (searchParams.get('provider') as 'all' | 'mangadex' | 'weebcentral' | 'mangapill') || 'all';
 
-    // Merge with alternative API for any missing or remaining chapters
-    if (offset === 0 && titles.length > 0) {
-      const merged = await getMergedWithAlternativeChapters(titles, chapters);
-      chapters = merged.chapters;
-    }
+    const chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, provider);
 
     return NextResponse.json({
       success: true,

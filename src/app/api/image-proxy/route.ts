@@ -8,6 +8,16 @@ const ALLOWED_HOSTS = [
   'mangadex.org',
   'anilist.co',
   'kitsu.io',
+  'weebcentral.com',
+  'mangapill.com',
+  'mpcdn.top',
+  'comick.pictures',
+  'comick.fun',
+  'comick.cc',
+  'comick.io',
+  'compsci88.com',
+  'lowee.us',
+  'leanbox.us',
 ];
 
 function isAllowedHost(urlString: string): boolean {
@@ -21,6 +31,30 @@ function isAllowedHost(urlString: string): boolean {
     );
   } catch {
     return false;
+  }
+}
+
+function getRefererForUrl(targetUrl: string): string {
+  try {
+    const parsed = new URL(targetUrl);
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host.includes('weebcentral') ||
+      host.includes('leanbox') ||
+      host.includes('compsci88') ||
+      host.includes('lowee')
+    ) {
+      return 'https://weebcentral.com/';
+    }
+    if (host.includes('mangapill') || host.includes('mpcdn')) {
+      return 'https://mangapill.com/';
+    }
+    if (host.includes('comick')) {
+      return 'https://comick.io/';
+    }
+    return 'https://mangadex.org/';
+  } catch {
+    return 'https://mangadex.org/';
   }
 }
 
@@ -39,9 +73,10 @@ export async function GET(request: NextRequest) {
   try {
     const upstreamRes = await fetch(targetUrl, {
       headers: {
-        'User-Agent': 'MangaWeb/1.0 (https://github.com/mangaweb)',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        Referer: 'https://mangadex.org/',
+        Referer: getRefererForUrl(targetUrl),
       },
     });
 

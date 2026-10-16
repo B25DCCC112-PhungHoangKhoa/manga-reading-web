@@ -6,9 +6,8 @@ import { Star, BookOpen, Calendar, Tag, ArrowLeft } from 'lucide-react';
 import { getMangaById } from '@/lib/anilist';
 import {
   resolveMangaDexId,
-  getMangaChapters,
   getMangaEditions,
-  getMergedWithAlternativeChapters,
+  getCompleteChaptersAcrossProviders,
 } from '@/lib/mangadex';
 import ChapterList from '@/components/ChapterList';
 
@@ -59,7 +58,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
     manga.title.native,
   ].filter(Boolean) as string[];
 
-  let chapters: Awaited<ReturnType<typeof getMangaChapters>> = [];
+  let chapters: Awaited<ReturnType<typeof getCompleteChaptersAcrossProviders>> = [];
   let mangadexId: string | null = null;
   let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
 
@@ -72,16 +71,10 @@ export default async function MangaDetailPage({ params }: PageProps) {
     mangadexId = resolvedId;
     editions = foundEditions;
 
-    if (mangadexId) {
-      chapters = await getMangaChapters(mangadexId, 500);
-    }
-
-    // Fallback: If manga couldn't load chapters, or is missing remaining chapters,
-    // seamlessly supplement them from the alternative API provider
-    const merged = await getMergedWithAlternativeChapters(titles, chapters);
-    chapters = merged.chapters;
+    // Fetch full chapter catalog across MangaDex, WeebCentral, MangaPill, and Comick
+    chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'all');
   } catch (err) {
-    console.error('Error fetching manga chapters:', err);
+    console.error('Error fetching manga chapters across providers:', err);
   }
 
   // If no chapters or companion editions exist on MangaDex or alternative API, consider it unavailable
