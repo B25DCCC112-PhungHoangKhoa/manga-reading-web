@@ -68,9 +68,16 @@ export interface ChapterPagesResponse {
   prevChapterId?: string | null;
 }
 
+export interface MangaEdition {
+  id: string;
+  title: string;
+  isColored?: boolean;
+}
+
 export interface MangaDetailResponse {
   manga: AniListManga;
   mangadexId: string | null;
   chapters: MangaDexChapter[];
+  editions?: MangaEdition[];
 }
 

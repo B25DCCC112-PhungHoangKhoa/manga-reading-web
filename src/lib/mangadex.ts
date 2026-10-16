@@ -138,6 +138,72 @@ export async function resolveMangaDexId(
 }
 
 /**
+ * Searches MangaDex to find all legitimate editions (Standard, Colored, etc.) for a title
+ */
+export async function getMangaEditions(
+  anilistId: number,
+  titles: string[]
+): Promise<Array<{ id: string; title: string; isColored?: boolean }>> {
+  const cacheKey = `mangadex:editions:${anilistId}`;
+  return getOrSetCache(cacheKey, 86400, async () => {
+    const mainTitle = titles[0] || '';
+    if (!mainTitle.trim()) return [];
+
+    const cleanTitle = mainTitle
+      .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
+      .replace(/[:\-–—].*$/, '')
+      .trim();
+
+    try {
+      const url = `${MANGADEX_API}/manga?title=${encodeURIComponent(
+        cleanTitle
+      )}&limit=10&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+
+      const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+      if (!res.ok) return [];
+
+      const json = (await res.json()) as MangaDexApiResponse<MangaDexMangaItem[]>;
+      const items = json.data || [];
+
+      const editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
+      const lowerClean = cleanTitle.toLowerCase();
+
+      for (const item of items) {
+        const itemTitle =
+          Object.values(item.attributes.title || {})[0] ||
+          Object.values(item.attributes.altTitles?.[0] || {})[0] ||
+          '';
+
+        const lowerItem = itemTitle.toLowerCase();
+
+        // Skip doujinshis / parody
+        if (lowerItem.includes('doujinshi') || lowerItem.includes('fan colored') || lowerItem.includes('hentai')) {
+          continue;
+        }
+
+        // Must match either AniList ID or close title match
+        const isAlMatch = item.attributes?.links?.al === String(anilistId);
+        const isTitleMatch = lowerItem.includes(lowerClean) || lowerClean.includes(lowerItem);
+
+        if (isAlMatch || isTitleMatch) {
+          const isColored = lowerItem.includes('color');
+          editions.push({
+            id: item.id,
+            title: itemTitle,
+            isColored,
+          });
+        }
+      }
+
+      return editions.slice(0, 5);
+    } catch (err) {
+      console.error('Error fetching manga editions:', err);
+      return [];
+    }
+  });
+}
+
+/**
  * Fetch chapter feed for a manga.
  * Supports language fallback: tries English first; if 0 chapters exist in English,
  * fetches all available languages so chapters are always accessible.

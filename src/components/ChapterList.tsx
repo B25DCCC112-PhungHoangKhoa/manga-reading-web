@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpDown,
@@ -12,23 +12,59 @@ import {
   Globe,
   Info,
   HelpCircle,
+  Sparkles,
+  Server,
+  Loader2,
 } from 'lucide-react';
-import { MangaDexChapter } from '@/lib/types';
+import { MangaDexChapter, MangaEdition } from '@/lib/types';
 
 interface ChapterListProps {
   chapters: MangaDexChapter[];
   mangaId: string | number;
   mangaTitle?: string;
+  editions?: MangaEdition[];
+  initialMangaDexId?: string;
 }
 
 export default function ChapterList({
-  chapters,
+  chapters: initialChapters,
   mangaId,
   mangaTitle = 'this manga',
+  editions = [],
+  initialMangaDexId,
 }: ChapterListProps) {
+  const [chapters, setChapters] = useState<MangaDexChapter[]>(initialChapters);
+  const [selectedEditionId, setSelectedEditionId] = useState<string>(
+    initialMangaDexId || editions[0]?.id || ''
+  );
+  const [isLoadingEdition, setIsLoadingEdition] = useState(false);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
+
+  // Sync initial chapters if props change
+  useEffect(() => {
+    setChapters(initialChapters);
+  }, [initialChapters]);
+
+  // Handle switching edition / server
+  const handleEditionChange = async (editionId: string) => {
+    setSelectedEditionId(editionId);
+    setIsLoadingEdition(true);
+    try {
+      const res = await fetch(`/api/manga/${mangaId}/chapters?mangadexId=${editionId}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setChapters(json.data || []);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to switch edition:', err);
+    } finally {
+      setIsLoadingEdition(false);
+    }
+  };
 
   // Collect all unique languages in the chapters list
   const availableLanguages = useMemo(() => {
@@ -89,7 +125,7 @@ export default function ChapterList({
   return (
     <div className="w-full bg-zinc-900/60 rounded-2xl border border-zinc-800/80 p-5 md:p-6 backdrop-blur-md">
       {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-zinc-800">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
             <Layers className="w-5 h-5" />
@@ -98,7 +134,7 @@ export default function ChapterList({
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               Chapters
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                {chapters.length} available
+                {isLoadingEdition ? 'Loading...' : `${chapters.length} available`}
               </span>
             </h3>
             <p className="text-xs text-zinc-400">
@@ -107,9 +143,29 @@ export default function ChapterList({
           </div>
         </div>
 
+        {/* Multi-Edition / Server Switcher */}
+        {editions.length > 1 && (
+          <div className="flex items-center gap-2 bg-zinc-950/80 p-1.5 rounded-xl border border-zinc-800">
+            <Server className="w-3.5 h-3.5 text-indigo-400 ml-1.5 shrink-0" />
+            <span className="text-xs font-medium text-zinc-400">Edition / Source:</span>
+            <select
+              value={selectedEditionId}
+              onChange={(e) => handleEditionChange(e.target.value)}
+              disabled={isLoadingEdition}
+              className="bg-zinc-800 text-xs text-zinc-200 font-semibold px-2.5 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-50"
+            >
+              {editions.map((ed) => (
+                <option key={ed.id} value={ed.id}>
+                  {ed.title} {ed.isColored ? '🎨' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Search, Language & Sort Controls */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Language Selector (if multiple available) */}
+          {/* Language Selector */}
           {availableLanguages.length > 1 && (
             <div className="relative flex items-center">
               <Globe className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 pointer-events-none" />
@@ -118,7 +174,7 @@ export default function ChapterList({
                 onChange={(e) => setSelectedLanguage(e.target.value)}
                 className="bg-zinc-800/80 text-xs text-zinc-200 pl-7 pr-3 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer transition-colors"
               >
-                <option value="all">All Languages ({chapters.length})</option>
+                <option value="all">All Languages</option>
                 {availableLanguages.map((lang) => (
                   <option key={lang} value={lang}>
                     {lang.toUpperCase()}
@@ -136,7 +192,7 @@ export default function ChapterList({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search chapter..."
-              className="w-32 sm:w-40 bg-zinc-800/80 text-xs text-zinc-200 placeholder-zinc-500 pl-8 pr-3 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-32 sm:w-36 bg-zinc-800/80 text-xs text-zinc-200 placeholder-zinc-500 pl-8 pr-3 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
@@ -153,8 +209,13 @@ export default function ChapterList({
       </div>
 
       {/* Chapters Table or Informative Empty State */}
-      <div className="mt-4 divide-y divide-zinc-800/60 max-h-[600px] overflow-y-auto pr-1">
-        {filteredChapters.length === 0 ? (
+      <div className="mt-4 divide-y divide-zinc-800/60 max-h-[600px] overflow-y-auto pr-1 relative">
+        {isLoadingEdition ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-3 text-zinc-400">
+            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+            <span className="text-xs">Loading chapters...</span>
+          </div>
+        ) : filteredChapters.length === 0 ? (
           <div className="py-10 px-4 text-center max-w-lg mx-auto space-y-4">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-zinc-800 text-zinc-400 flex items-center justify-center">
               <HelpCircle className="w-6 h-6 text-zinc-400" />
@@ -246,25 +307,34 @@ export default function ChapterList({
                           {ch.scanlationGroup}
                         </span>
                       )}
-                      {!hasExternal && ch.pages > 0 && (
+                      {ch.pages > 0 && (
                         <span className="text-zinc-500">{ch.pages} pages</span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Action: External URL Badge or Read Button */}
+                {/* Action Buttons: In-App Reader (Always) + Optional External Link */}
                 <div className="shrink-0 flex items-center gap-2">
                   {hasExternal ? (
-                    <a
-                      href={ch.externalUrl!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all hover:scale-102"
-                    >
-                      <span>Official Source</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    <>
+                      <Link
+                        href={`/read/${ch.id}?mangaId=${mangaId}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-sm transition-all hover:scale-102 active:scale-95"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Read In-App</span>
+                      </Link>
+                      <a
+                        href={ch.externalUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-amber-400 border border-zinc-700 text-xs transition-colors"
+                        title="Open in official MangaPlus tab"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </>
                   ) : (
                     <Link
                       href={`/read/${ch.id}?mangaId=${mangaId}`}

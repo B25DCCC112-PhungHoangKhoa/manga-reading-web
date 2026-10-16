@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Star, BookOpen, Calendar, Tag, ArrowLeft } from 'lucide-react';
 import { getMangaById } from '@/lib/anilist';
-import { resolveMangaDexId, getMangaChapters } from '@/lib/mangadex';
+import { resolveMangaDexId, getMangaChapters, getMangaEditions } from '@/lib/mangadex';
 import ChapterList from '@/components/ChapterList';
 
 export const revalidate = 900; // Cache page for 15 minutes
@@ -42,7 +42,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
     manga.coverImage?.large ||
     '/placeholder.png';
 
-  // Resolve MangaDex chapters
+  // Resolve MangaDex chapters & companion editions
   const titles = [
     manga.title.english,
     manga.title.romaji,
@@ -50,8 +50,18 @@ export default async function MangaDetailPage({ params }: PageProps) {
   ].filter(Boolean) as string[];
 
   let chapters: Awaited<ReturnType<typeof getMangaChapters>> = [];
+  let mangadexId: string | null = null;
+  let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
+
   try {
-    const mangadexId = await resolveMangaDexId(manga.id, titles);
+    const [resolvedId, foundEditions] = await Promise.all([
+      resolveMangaDexId(manga.id, titles),
+      getMangaEditions(manga.id, titles),
+    ]);
+
+    mangadexId = resolvedId;
+    editions = foundEditions;
+
     if (mangadexId) {
       chapters = await getMangaChapters(mangadexId, 100);
     }
@@ -204,7 +214,13 @@ export default async function MangaDetailPage({ params }: PageProps) {
 
         {/* Chapter Feed Section */}
         <div className="mt-12">
-          <ChapterList chapters={chapters} mangaId={manga.id} mangaTitle={title} />
+          <ChapterList
+            chapters={chapters}
+            mangaId={manga.id}
+            mangaTitle={title}
+            editions={editions}
+            initialMangaDexId={mangadexId || undefined}
+          />
         </div>
       </div>
     </div>
