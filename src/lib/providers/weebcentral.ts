@@ -40,7 +40,7 @@ function cleanTitle(raw: string): string {
  * Search WeebCentral for a manga by title
  */
 export async function searchWeebcentral(titles: string[]): Promise<string | null> {
-  const cacheKey = `weebcentral:search:${titles.join(':')}`;
+  const cacheKey = `weebcentral:search:v3:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
     for (const title of titles) {
       if (!title) continue;

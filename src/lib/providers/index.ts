@@ -36,7 +36,18 @@ export async function getCompleteChaptersAcrossProviders(
   // If a specific provider is requested:
   if (selectedProvider === 'weebcentral') {
     const id = await searchWeebcentral(titles);
-    return id ? await getWeebcentralChapters(id) : [];
+    let chapters = id ? await getWeebcentralChapters(id) : [];
+
+    // Fallback: If WeebCentral is blocked by Cloudflare (common on cloud hosting like Vercel),
+    // automatically fall back to MangaPill so chapters load seamlessly
+    if (chapters.length === 0) {
+      console.warn('WeebCentral returned 0 chapters (Cloudflare datacenter block on Vercel), falling back to MangaPill');
+      const path = await searchMangaPill(titles);
+      if (path) {
+        chapters = await getMangaPillChapters(path);
+      }
+    }
+    return chapters;
   }
 
   if (selectedProvider === 'mangapill') {

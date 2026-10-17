@@ -209,8 +209,8 @@ export default function ChapterList({
             className="bg-zinc-800 text-xs text-zinc-200 font-semibold px-2.5 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-50"
           >
             <option value="mangadex">MangaDex (Default)</option>
-            <option value="weebcentral">WeebCentral</option>
-            <option value="mangapill">MangaPill</option>
+            <option value="mangapill">MangaPill (Recommended)</option>
+            <option value="weebcentral">WeebCentral (Dev / Local)</option>
             <option value="all">⚡ All Providers (Merged)</option>
             {editions.map((ed) => (
               <option key={ed.id} value={ed.id}>
