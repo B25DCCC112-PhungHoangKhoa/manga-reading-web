@@ -33,6 +33,13 @@ const ALLOWED_HOST_SUFFIXES = [
   'readnaruto.com',
   'readberserk.com',
   'readvinlandsaga.com',
+  'cloud-zzz.com',
+  'nettruyenar.com',
+  'nettruyenww.com',
+  'nettruyenrr.com',
+  'nettruyen.com',
+  'truyenqqviet.com',
+  'truyenqq.com',
 ];
 
 function isAllowedHost(urlString: string): boolean {
@@ -130,6 +137,15 @@ function getRefererForUrl(targetUrl: string): string {
       pathname.startsWith('/file/mangapill/')
     ) {
       return 'https://mangapill.com/';
+    }
+
+    // NetTruyen CDNs
+    if (
+      host.includes('cloud-zzz') ||
+      host.includes('nettruyen') ||
+      host.includes('truyenqq')
+    ) {
+      return 'https://nettruyenar.com/';
     }
 
     // Comick

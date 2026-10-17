@@ -24,7 +24,7 @@ interface ChapterListProps {
   mangaTitle?: string;
   editions?: MangaEdition[];
   initialMangaDexId?: string;
-  initialProvider?: 'mangadex' | 'weebcentral' | 'mangapill' | 'all';
+  initialProvider?: 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' | 'all';
 }
 
 export default function ChapterList({
@@ -58,7 +58,7 @@ export default function ChapterList({
     setIsLoadingEdition(true);
     try {
       let url = `/api/manga/${mangaId}/chapters`;
-      if (['all', 'mangadex', 'weebcentral', 'mangapill'].includes(val)) {
+      if (['all', 'mangadex', 'weebcentral', 'mangapill', 'nettruyen'].includes(val)) {
         url += `?provider=${val}`;
       } else {
         url += `?mangadexId=${val}`;
@@ -190,6 +190,8 @@ export default function ChapterList({
                   ? 'WeebCentral'
                   : selectedEditionId === 'mangapill'
                   ? 'MangaPill'
+                  : selectedEditionId === 'nettruyen'
+                  ? 'NetTruyen (Tiếng Việt)'
                   : selectedEditionId === 'all'
                   ? 'All Providers (Merged)'
                   : editions.find((e) => e.id === selectedEditionId)?.title || 'MangaDex'}
@@ -210,6 +212,7 @@ export default function ChapterList({
           >
             <option value="mangadex">MangaDex (Default)</option>
             <option value="mangapill">MangaPill (Recommended)</option>
+            <option value="nettruyen">🇻🇳 NetTruyen (Tiếng Việt)</option>
             <option value="weebcentral">WeebCentral (Dev / Local)</option>
             <option value="all">⚡ All Providers (Merged)</option>
             {editions.map((ed) => (
@@ -314,6 +317,14 @@ export default function ChapterList({
                   className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
                 >
                   ⚡ Switch to MangaPill (Recommended)
+                </button>
+              )}
+              {selectedEditionId !== 'nettruyen' && (
+                <button
+                  onClick={() => handleEditionChange('nettruyen')}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 text-xs font-semibold border border-rose-800/80 transition-colors shadow-sm"
+                >
+                  🇻🇳 Đọc Tiếng Việt (NetTruyen)
                 </button>
               )}
               {selectedEditionId !== 'mangadex' && (

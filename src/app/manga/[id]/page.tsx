@@ -61,7 +61,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
   let chapters: Awaited<ReturnType<typeof getCompleteChaptersAcrossProviders>> = [];
   let mangadexId: string | null = null;
   let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
-  let initialProvider: 'mangadex' | 'weebcentral' | 'mangapill' | 'all' = 'mangadex';
+  let initialProvider: 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' | 'all' = 'mangadex';
 
   try {
     const [resolvedId, foundEditions] = await Promise.all([

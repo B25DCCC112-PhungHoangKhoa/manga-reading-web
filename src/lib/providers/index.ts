@@ -11,6 +11,11 @@ import {
   getMangaPillChapterPages,
 } from './mangapill';
 import {
+  searchNettruyen,
+  getNettruyenChapters,
+  getNettruyenChapterPages,
+} from './nettruyen';
+import {
   getMergedWithAlternativeChapters,
   getAlternativeChapterPages,
 } from '../fallbackManga';
@@ -22,18 +27,26 @@ export {
   searchMangaPill,
   getMangaPillChapters,
   getMangaPillChapterPages,
+  searchNettruyen,
+  getNettruyenChapters,
+  getNettruyenChapterPages,
 };
 
 /**
- * Fetch and merge chapters across MangaDex, WeebCentral, MangaPill, and Comick
+ * Fetch and merge chapters across MangaDex, WeebCentral, MangaPill, NetTruyen, and Comick
  * so 100% of all chapters are available without gaps.
  */
 export async function getCompleteChaptersAcrossProviders(
   mangaDexId: string | null,
   titles: string[],
-  selectedProvider: 'all' | 'mangadex' | 'weebcentral' | 'mangapill' = 'all'
+  selectedProvider: 'all' | 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' = 'all'
 ): Promise<MangaDexChapter[]> {
   // If a specific provider is requested:
+  if (selectedProvider === 'nettruyen') {
+    const match = await searchNettruyen(titles);
+    return match ? await getNettruyenChapters(match.comicSlug, match.comicId) : [];
+  }
+
   if (selectedProvider === 'weebcentral') {
     const id = await searchWeebcentral(titles);
     let chapters = id ? await getWeebcentralChapters(id) : [];
@@ -149,6 +162,9 @@ export async function getCompleteChaptersAcrossProviders(
 export async function getPagesForAnyProvider(
   chapterId: string
 ): Promise<ChapterPagesResponse> {
+  if (chapterId.startsWith('nettruyen-')) {
+    return getNettruyenChapterPages(chapterId);
+  }
   if (chapterId.startsWith('weebcentral-')) {
     return getWeebcentralChapterPages(chapterId);
   }

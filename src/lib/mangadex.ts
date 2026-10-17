@@ -7,6 +7,7 @@ import {
 import {
   getWeebcentralChapterPages,
   getMangaPillChapterPages,
+  getNettruyenChapterPages,
   getCompleteChaptersAcrossProviders,
 } from './providers';
 
@@ -15,6 +16,7 @@ export {
   getMergedWithAlternativeChapters,
   getWeebcentralChapterPages,
   getMangaPillChapterPages,
+  getNettruyenChapterPages,
   getCompleteChaptersAcrossProviders,
 };
 
@@ -409,7 +411,10 @@ export async function getMangaChapters(
  * Fetch chapter pages from MangaDex @Home server or alternative fallback server
  */
 export async function getChapterPages(chapterId: string): Promise<ChapterPagesResponse> {
-  // 0. If the chapter is from WeebCentral, MangaPill, or Comick, route directly
+  // 0. If the chapter is from NetTruyen, WeebCentral, MangaPill, or Comick, route directly
+  if (chapterId.startsWith('nettruyen-')) {
+    return getNettruyenChapterPages(chapterId);
+  }
   if (chapterId.startsWith('weebcentral-')) {
     return getWeebcentralChapterPages(chapterId);
   }
