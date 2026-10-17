@@ -21,10 +21,15 @@ function cleanTitle(raw: string): string {
 }
 
 function buildProxiedUrl(targetUrl: string): string {
-  const proxy = process.env.CLOUDFLARE_PROXY_URL || process.env.PROXY_URL;
+  const proxy = (
+    process.env.CLOUDFLARE_PROXY_URL ||
+    process.env.CLOUDFLARE_PROXY_UR ||
+    process.env.PROXY_URL ||
+    ''
+  ).trim();
   if (!proxy) return targetUrl;
-  const separator = proxy.includes('?') ? '&' : '?';
-  return `${proxy}${separator}url=${encodeURIComponent(targetUrl)}`;
+  const cleanProxy = proxy.replace(/\/+$/, '');
+  return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
 }
 
 /**
