@@ -194,47 +194,98 @@ export async function fetchNetTruyenChapterPagesClient(
     const [comicSlug, chapterSlug] = cleanId.split('__');
     if (!comicSlug || !chapterSlug) return [];
 
-    const chapterUrl = buildUrl(`${BASE_URL}/truyen-tranh/${comicSlug}/${chapterSlug}`);
-    const res = await fetch(chapterUrl, {
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) return [];
+    const candidateUrls = [
+      buildUrl(`${BASE_URL}/truyen-tranh/${comicSlug}/${chapterSlug}`),
+    ];
 
-    const html = await res.text();
-    const imgRegex = /<img[^>]+(?:data-src|data-original|src)=["']([^"']+)["'][^>]*>/gi;
-    let match: RegExpExecArray | null;
-    const rawImageUrls: string[] = [];
+    if (chapterSlug.startsWith('chapter-')) {
+      candidateUrls.push(
+        buildUrl(`${BASE_URL}/truyen-tranh/${comicSlug}/chuong-${chapterSlug.slice(8)}`)
+      );
+    } else if (chapterSlug.startsWith('chuong-')) {
+      candidateUrls.push(
+        buildUrl(`${BASE_URL}/truyen-tranh/${comicSlug}/chapter-${chapterSlug.slice(7)}`)
+      );
+    }
 
-    while ((match = imgRegex.exec(html)) !== null) {
-      let src = match[1].trim();
-      if (src.startsWith('//')) src = `https:${src}`;
-      if (
-        !src.startsWith('http') ||
-        src.includes('logo') ||
-        src.includes('icon') ||
-        src.includes('banner') ||
-        src.includes('facebook') ||
-        src.includes('pixel')
-      ) {
-        continue;
+    // Also try alternate mirror
+    candidateUrls.push(
+      buildUrl(`https://nettruyenar.com/truyen-tranh/${comicSlug}/${chapterSlug}`)
+    );
+
+    function extractImages(html: string): string[] {
+      const imgTagRegex = /<img\b([^>]*)>/gi;
+      let tagMatch: RegExpExecArray | null;
+      const urls: string[] = [];
+
+      while ((tagMatch = imgTagRegex.exec(html)) !== null) {
+        const attributes = tagMatch[1];
+        const dataOriginal = attributes.match(/data-original=["']([^"']+)["']/i)?.[1];
+        const dataSrc = attributes.match(/data-src=["']([^"']+)["']/i)?.[1];
+        const dataCdn = attributes.match(/data-cdn=["']([^"']+)["']/i)?.[1];
+        const dataSv1 = attributes.match(/data-sv1=["']([^"']+)["']/i)?.[1];
+        const dataSv2 = attributes.match(/data-sv2=["']([^"']+)["']/i)?.[1];
+        const srcAttr = attributes.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+
+        const candidate = dataOriginal || dataSrc || dataCdn || dataSv1 || dataSv2 || srcAttr;
+        if (!candidate) continue;
+
+        let src = candidate.trim();
+        if (src.startsWith('//')) src = `https:${src}`;
+        if (
+          !src.startsWith('http') ||
+          src.includes('logo') ||
+          src.includes('icon') ||
+          src.includes('banner') ||
+          src.includes('facebook') ||
+          src.includes('pixel') ||
+          src.includes('lazy') ||
+          src.includes('loading') ||
+          src.includes('blank.gif')
+        ) {
+          continue;
+        }
+
+        if (
+          (src.includes('.jpg') ||
+            src.includes('.png') ||
+            src.includes('.jpeg') ||
+            src.includes('.webp') ||
+            src.includes('.avif') ||
+            src.includes('googleusercontent') ||
+            src.includes('cloud-zzz') ||
+            src.includes('kcgsbok') ||
+            src.includes('imagebam')) &&
+          !urls.includes(src)
+        ) {
+          urls.push(src);
+        }
       }
+      return urls;
+    }
 
-      if (
-        (src.includes('.jpg') ||
-          src.includes('.png') ||
-          src.includes('.jpeg') ||
-          src.includes('.webp')) &&
-        !rawImageUrls.includes(src)
-      ) {
-        rawImageUrls.push(src);
+    for (const url of candidateUrls) {
+      try {
+        const res = await fetch(url, {
+          signal: AbortSignal.timeout(6000),
+        });
+        if (!res.ok) continue;
+
+        const html = await res.text();
+        const images = extractImages(html);
+        if (images.length > 0) {
+          return images.map((originalUrl, idx) => ({
+            pageNumber: idx + 1,
+            url: `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`,
+            originalUrl,
+          }));
+        }
+      } catch (err) {
+        console.warn('Failed fetching candidate NetTruyen chapter URL:', url, err);
       }
     }
 
-    return rawImageUrls.map((originalUrl, idx) => ({
-      pageNumber: idx + 1,
-      url: `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`,
-      originalUrl,
-    }));
+    return [];
   } catch (err) {
     console.error('fetchNetTruyenChapterPagesClient error:', err);
     return [];

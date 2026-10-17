@@ -49,7 +49,15 @@ export default function ChapterReader({
   provider,
 }: ChapterReaderProps) {
   const router = useRouter();
+  const isNetTruyen = initialData.chapterId.startsWith('nettruyen-');
   const [pages, setPages] = useState(initialData.pages || []);
+  const [isUnavailable, setIsUnavailable] = useState(
+    Boolean(initialData.isUnavailable && !isNetTruyen)
+  );
+  const [isLoadingPages, setIsLoadingPages] = useState(
+    (initialData.isUnavailable || (!initialData.pages || initialData.pages.length === 0)) &&
+      isNetTruyen
+  );
   const [readingMode, setReadingMode] = useState<'vertical' | 'single'>('vertical');
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -69,23 +77,37 @@ export default function ChapterReader({
 
   // Reset page state on chapter change
   useEffect(() => {
+    const isNetTruyenChapter = initialData.chapterId.startsWith('nettruyen-');
+    const hasInitialPages = Boolean(initialData.pages && initialData.pages.length > 0);
+
     setPages(initialData.pages || []);
     setCurrentPageIndex(0);
     setLoadedPages({});
     window.scrollTo({ top: 0, behavior: 'instant' });
 
-    // Client-side fallback for NetTruyen if server returned 0 pages
-    if (
-      (!initialData.pages || initialData.pages.length === 0) &&
-      initialData.chapterId.startsWith('nettruyen-')
-    ) {
-      fetchNetTruyenChapterPagesClient(initialData.chapterId).then((clientPages) => {
-        if (clientPages && clientPages.length > 0) {
-          setPages(clientPages);
-        }
-      });
+    if (!hasInitialPages && isNetTruyenChapter) {
+      setIsLoadingPages(true);
+      fetchNetTruyenChapterPagesClient(initialData.chapterId)
+        .then((clientPages) => {
+          if (clientPages && clientPages.length > 0) {
+            setPages(clientPages);
+            setIsUnavailable(false);
+          } else {
+            setIsUnavailable(true);
+          }
+        })
+        .catch((err) => {
+          console.error('Client fallback failed for NetTruyen chapter:', err);
+          setIsUnavailable(true);
+        })
+        .finally(() => {
+          setIsLoadingPages(false);
+        });
+    } else {
+      setIsUnavailable(Boolean(initialData.isUnavailable && !hasInitialPages));
+      setIsLoadingPages(false);
     }
-  }, [initialData.chapterId, initialData.pages]);
+  }, [initialData.chapterId, initialData.pages, initialData.isUnavailable]);
 
   // Load chapter navigation list & siblings
   useEffect(() => {
@@ -382,8 +404,42 @@ export default function ChapterReader({
     );
   }
 
+  // Loading screen when fetching client fallback (e.g. NetTruyen)
+  if (isLoadingPages) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4">
+        <header className="fixed top-0 left-0 right-0 h-14 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 px-4 flex items-center justify-between z-50">
+          <div className="flex items-center gap-3">
+            <Link
+              href={mangaId ? `/manga/${mangaId}` : '/'}
+              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <span className="text-sm font-bold text-white">
+              {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Loading Chapter'}
+            </span>
+          </div>
+          <Link
+            href={mangaId ? `/manga/${mangaId}` : '/'}
+            className="text-xs text-zinc-400 hover:text-white transition-colors"
+          >
+            Back to Chapters
+          </Link>
+        </header>
+
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-10 h-10 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-sm text-zinc-400 font-medium animate-pulse">
+            Đang tải chương {initialData.chapterNumber || ''}...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Handle unavailable chapter (e.g. MangaDex 404 / deleted files)
-  if (initialData.isUnavailable || pages.length === 0) {
+  if (isUnavailable || (!isLoadingPages && pages.length === 0)) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4">
         {/* Top Header Bar */}
@@ -667,6 +723,13 @@ export default function ChapterReader({
                   onLoad={() => {
                     setLoadedPages((prev) => ({ ...prev, [index]: true }));
                   }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (page.originalUrl && !target.dataset.triedWorker) {
+                      target.dataset.triedWorker = 'true';
+                      target.src = `https://manga-proxy.phungvanquangdmx.workers.dev/?url=${encodeURIComponent(page.originalUrl)}`;
+                    }
+                  }}
                 />
               </div>
             ))}
@@ -702,6 +765,14 @@ export default function ChapterReader({
                   className="max-h-[92vh] w-auto max-w-full object-contain mx-auto shadow-2xl rounded-sm"
                   onLoad={() => {
                     setLoadedPages((prev) => ({ ...prev, [currentPageIndex]: true }));
+                  }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const original = pages[currentPageIndex]?.originalUrl;
+                    if (original && !target.dataset.triedWorker) {
+                      target.dataset.triedWorker = 'true';
+                      target.src = `https://manga-proxy.phungvanquangdmx.workers.dev/?url=${encodeURIComponent(original)}`;
+                    }
                   }}
                 />
               </div>

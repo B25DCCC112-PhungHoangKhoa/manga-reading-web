@@ -22,13 +22,18 @@ export default async function ChapterReaderPage({ params, searchParams }: PagePr
   } catch (err: unknown) {
     console.error('Failed to load chapter pages:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
+    const isNetTruyen = chapterId.startsWith('nettruyen-');
+    const chapterNumMatch =
+      chapterId.match(/(?:chuong|chapter)-(\d+(?:\.\d+)?)/i) ||
+      chapterId.match(/(\d+(?:\.\d+)?)$/);
+
     chapterData = {
       chapterId,
-      chapterNumber: null,
+      chapterNumber: chapterNumMatch?.[1] || null,
       title: null,
       volume: null,
       externalUrl: null,
-      isUnavailable: true,
+      isUnavailable: !isNetTruyen,
       errorMessage: `Could not load chapter pages: ${message}`,
       pages: [],
       total: 0,

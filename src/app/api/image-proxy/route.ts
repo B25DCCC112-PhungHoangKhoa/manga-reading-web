@@ -35,14 +35,28 @@ const ALLOWED_HOST_SUFFIXES = [
   'readvinlandsaga.com',
   'cloud-zzz.com',
   'kcgsbok.com',
+  'imagebam.com',
+  'blogspot.com',
+  'googleusercontent.com',
   'nettruyen.gg',
   'nettruyenar.com',
   'nettruyenww.com',
   'nettruyenrr.com',
   'nettruyen.com',
+  'nettruyenco.vn',
+  'nettruyenplus.com',
+  'nettruyenhay.org',
+  'nettruyenmax.com',
+  'nettruyennew.com',
+  'nettruyentv.com',
+  'nettruyenonline.com',
   'truyenvua.com',
   'truyenqqviet.com',
   'truyenqq.com',
+  'secureservercdn.net',
+  'wp.com',
+  'cloudinary.com',
+  'imgur.com',
 ];
 
 function isAllowedHost(urlString: string): boolean {
@@ -101,6 +115,11 @@ function isAllowedHost(urlString: string): boolean {
         parsed.pathname.includes('/chapters/') ||
         parsed.pathname.includes('/manga/'))
     ) {
+      return true;
+    }
+
+    // 5. Allow standard image file extensions on public domains
+    if (/\.(jpe?g|png|webp|avif|gif)(\?|$)/i.test(parsed.pathname + parsed.search)) {
       return true;
     }
 
@@ -218,7 +237,27 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch {
-        // Ignore fallback error and continue with initial response check
+        // Ignore fallback error and continue with worker proxy fallback
+      }
+
+      // If still blocked, attempt through Cloudflare worker proxy
+      if (!upstreamRes.ok) {
+        try {
+          const workerUrl = `https://manga-proxy.phungvanquangdmx.workers.dev/?url=${encodeURIComponent(targetUrl)}`;
+          const workerRes = await fetch(workerUrl, {
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+              Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            },
+            signal: AbortSignal.timeout(6000),
+          });
+          if (workerRes.ok) {
+            upstreamRes = workerRes;
+          }
+        } catch {
+          // Ignore worker fallback error and proceed to final response check
+        }
       }
     }
 

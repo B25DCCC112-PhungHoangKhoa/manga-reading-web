@@ -338,26 +338,34 @@ export async function getNettruyenChapterPages(
 
     const html = await res.text();
 
-    const imgRegex = /<img[^>]+(?:data-src|data-original|src)=["']([^"']+)["'][^>]*>/gi;
-    let match: RegExpExecArray | null;
+    const imgTagRegex = /<img\b([^>]*)>/gi;
+    let tagMatch: RegExpExecArray | null;
     const rawImageUrls: string[] = [];
 
-    while ((match = imgRegex.exec(html)) !== null) {
-      let src = match[1].trim();
+    while ((tagMatch = imgTagRegex.exec(html)) !== null) {
+      const attributes = tagMatch[1];
+      const dataOriginal = attributes.match(/data-original=["']([^"']+)["']/i)?.[1];
+      const dataSrc = attributes.match(/data-src=["']([^"']+)["']/i)?.[1];
+      const dataCdn = attributes.match(/data-cdn=["']([^"']+)["']/i)?.[1];
+      const dataSv1 = attributes.match(/data-sv1=["']([^"']+)["']/i)?.[1];
+      const dataSv2 = attributes.match(/data-sv2=["']([^"']+)["']/i)?.[1];
+      const srcAttr = attributes.match(/\bsrc=["']([^"']+)["']/i)?.[1];
 
-      // Fix protocol-relative URLs
-      if (src.startsWith('//')) {
-        src = `https:${src}`;
-      }
+      const candidate = dataOriginal || dataSrc || dataCdn || dataSv1 || dataSv2 || srcAttr;
+      if (!candidate) continue;
 
-      // Filter out logos, icons, ads, and tracker pixels
+      let src = candidate.trim();
+      if (src.startsWith('//')) src = `https:${src}`;
       if (
         !src.startsWith('http') ||
         src.includes('logo') ||
         src.includes('icon') ||
         src.includes('banner') ||
         src.includes('facebook') ||
-        src.includes('pixel')
+        src.includes('pixel') ||
+        src.includes('lazy') ||
+        src.includes('loading') ||
+        src.includes('blank.gif')
       ) {
         continue;
       }
@@ -366,7 +374,12 @@ export async function getNettruyenChapterPages(
         (src.includes('.jpg') ||
           src.includes('.png') ||
           src.includes('.jpeg') ||
-          src.includes('.webp')) &&
+          src.includes('.webp') ||
+          src.includes('.avif') ||
+          src.includes('googleusercontent') ||
+          src.includes('cloud-zzz') ||
+          src.includes('kcgsbok') ||
+          src.includes('imagebam')) &&
         !rawImageUrls.includes(src)
       ) {
         rawImageUrls.push(src);
