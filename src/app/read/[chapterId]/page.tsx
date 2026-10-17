@@ -5,12 +5,12 @@ import ChapterReader from '@/components/ChapterReader';
 
 interface PageProps {
   params: Promise<{ chapterId: string }>;
-  searchParams: Promise<{ mangaId?: string }>;
+  searchParams: Promise<{ mangaId?: string; provider?: string }>;
 }
 
 export default async function ChapterReaderPage({ params, searchParams }: PageProps) {
   const { chapterId } = await params;
-  const { mangaId } = await searchParams;
+  const { mangaId, provider } = await searchParams;
 
   if (!chapterId) {
     notFound();
@@ -40,6 +40,7 @@ export default async function ChapterReaderPage({ params, searchParams }: PagePr
     <ChapterReader
       initialData={chapterData}
       mangaId={mangaId || chapterData.mangaId}
+      provider={provider}
     />
   );
 }

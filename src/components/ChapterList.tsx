@@ -460,7 +460,7 @@ export default function ChapterList({
                     </a>
                   ) : (
                     <Link
-                      href={`/read/${ch.id}?mangaId=${mangaId}`}
+                      href={`/read/${ch.id}?mangaId=${mangaId}&provider=${selectedEditionId}`}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm shadow-indigo-600/30 transition-all hover:scale-102 active:scale-95"
                     >
                       <span>Read Chapter</span>

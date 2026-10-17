@@ -16,17 +16,39 @@ import {
   ExternalLink,
   BookOpen,
   Sparkles,
+  ListFilter,
+  CheckCircle2,
 } from 'lucide-react';
 import { ChapterPagesResponse } from '@/lib/types';
+
+interface SimpleChapter {
+  id: string;
+  chapter: string | null;
+  title: string | null;
+  translatedLanguage?: string;
+  externalUrl?: string | null;
+}
+
+interface NavData {
+  chapters: SimpleChapter[];
+  prevChapter: SimpleChapter | null;
+  nextChapter: SimpleChapter | null;
+  currentIndex: number;
+}
 
 interface ChapterReaderProps {
   initialData: ChapterPagesResponse;
   mangaId?: string;
+  provider?: string;
 }
 
-export default function ChapterReader({ initialData, mangaId }: ChapterReaderProps) {
+export default function ChapterReader({
+  initialData,
+  mangaId,
+  provider,
+}: ChapterReaderProps) {
   const router = useRouter();
-  const [pages] = useState(initialData.pages || []);
+  const [pages, setPages] = useState(initialData.pages || []);
   const [readingMode, setReadingMode] = useState<'vertical' | 'single'>('vertical');
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -36,15 +58,76 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
   // Track page image load status
   const [loadedPages, setLoadedPages] = useState<Record<number, boolean>>({});
 
+  // Chapter Navigation State
+  const [navData, setNavData] = useState<NavData | null>(null);
+  const [isLoadingNav, setIsLoadingNav] = useState(true);
+
   // Container refs
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Reset page state on chapter change
+  useEffect(() => {
+    setPages(initialData.pages || []);
+    setCurrentPageIndex(0);
+    setLoadedPages({});
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [initialData.chapterId, initialData.pages]);
+
+  // Load chapter navigation list & siblings
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadNavigation() {
+      setIsLoadingNav(true);
+      try {
+        const query = new URLSearchParams();
+        if (mangaId) query.set('mangaId', mangaId);
+        if (provider) query.set('provider', provider);
+
+        const res = await fetch(
+          `/api/chapter/${initialData.chapterId}/navigation?${query.toString()}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && !isCancelled) {
+            setNavData({
+              chapters: json.chapters || [],
+              prevChapter: json.prevChapter,
+              nextChapter: json.nextChapter,
+              currentIndex: json.currentIndex,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load chapter navigation:', err);
+      } finally {
+        if (!isCancelled) setIsLoadingNav(false);
+      }
+    }
+
+    loadNavigation();
+    return () => {
+      isCancelled = true;
+    };
+  }, [initialData.chapterId, mangaId, provider]);
+
+  // Navigate to target chapter
+  const navigateToChapter = useCallback(
+    (targetChapterId: string) => {
+      const query = new URLSearchParams();
+      if (mangaId) query.set('mangaId', mangaId);
+      if (provider) query.set('provider', provider);
+      const url = `/read/${targetChapterId}${query.toString() ? `?${query.toString()}` : ''}`;
+      router.push(url);
+    },
+    [mangaId, provider, router]
+  );
 
   // 1. SMART IMAGE PRELOADING (loading the next 3 pages ahead into memory)
   useEffect(() => {
     if (pages.length === 0) return;
 
-    // Target the next 3 pages
     const preloadIndices = [
       currentPageIndex + 1,
       currentPageIndex + 2,
@@ -112,8 +195,7 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (['input', 'textarea'].includes((e.target as HTMLElement).tagName.toLowerCase())) {
+      if (['input', 'textarea', 'select'].includes((e.target as HTMLElement).tagName.toLowerCase())) {
         return;
       }
 
@@ -129,6 +211,22 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
         case 'A':
           e.preventDefault();
           goToPrevPage();
+          break;
+        case '[':
+        case 'p':
+        case 'P':
+          if (navData?.prevChapter) {
+            e.preventDefault();
+            navigateToChapter(navData.prevChapter.id);
+          }
+          break;
+        case ']':
+        case 'n':
+        case 'N':
+          if (navData?.nextChapter) {
+            e.preventDefault();
+            navigateToChapter(navData.nextChapter.id);
+          }
           break;
         case 'f':
         case 'F':
@@ -150,7 +248,7 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNextPage, goToPrevPage]);
+  }, [goToNextPage, goToPrevPage, navData, navigateToChapter]);
 
   // 4. FULLSCREEN TOGGLE
   const toggleFullscreen = () => {
@@ -167,7 +265,7 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4">
         {/* Top Header Bar */}
         <header className="fixed top-0 left-0 right-0 h-14 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 px-4 flex items-center justify-between z-50">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
               className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors shrink-0"
@@ -175,14 +273,39 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold text-white truncate">
-                {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Official Reader'}
-                {initialData.title ? `: ${initialData.title}` : ''}
-              </h1>
-              <span className="text-[11px] text-amber-400 font-medium">
-                Official Publisher Release (Shueisha / MangaPlus)
-              </span>
+
+            {/* Quick Next/Prev */}
+            <div className="flex items-center gap-1 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+              <button
+                onClick={() => navData?.prevChapter && navigateToChapter(navData.prevChapter.id)}
+                disabled={!navData?.prevChapter}
+                className="p-1 rounded-lg text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
+                title={navData?.prevChapter ? `Previous Chapter (${navData.prevChapter.chapter})` : 'No previous chapter'}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {navData?.chapters && navData.chapters.length > 0 && (
+                <select
+                  value={initialData.chapterId}
+                  onChange={(e) => navigateToChapter(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-zinc-200 px-1 py-0.5 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[200px] truncate"
+                >
+                  {navData.chapters.map((ch) => (
+                    <option key={ch.id} value={ch.id} className="bg-zinc-900 text-zinc-100">
+                      {ch.chapter ? `Chapter ${ch.chapter}` : 'Chapter'}
+                      {ch.title ? `: ${ch.title}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={() => navData?.nextChapter && navigateToChapter(navData.nextChapter.id)}
+                disabled={!navData?.nextChapter}
+                className="p-1 rounded-lg text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
+                title={navData?.nextChapter ? `Next Chapter (${navData.nextChapter.chapter})` : 'No next chapter'}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -209,7 +332,7 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
               {initialData.title ? `: ${initialData.title}` : ''}
             </h2>
             <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-              This chapter is hosted and licensed officially by <strong>MangaPlus by SHUEISHA</strong>. Because official publishers block third-party browser embedding to protect digital copyright, it opens directly in their official web viewer.
+              This chapter is hosted and licensed officially by <strong>MangaPlus by SHUEISHA</strong>. Because official publishers block third-party browser embedding, it opens directly in their official web viewer.
             </p>
           </div>
 
@@ -224,22 +347,22 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
               <ExternalLink className="w-4 h-4" />
             </a>
 
+            {/* Next Chapter Button if available */}
+            {navData?.nextChapter && (
+              <button
+                onClick={() => navigateToChapter(navData.nextChapter!.id)}
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+              >
+                Go to Next Chapter ({navData.nextChapter.chapter ? `Ch. ${navData.nextChapter.chapter}` : 'Next'}) →
+              </button>
+            )}
+
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
               className="px-4 py-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs font-semibold border border-zinc-700 transition-colors"
             >
               Return to Chapter List
             </Link>
-          </div>
-
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 text-left text-[11px] text-zinc-400 space-y-1">
-            <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Tip for full in-app reading:
-            </span>
-            <p className="leading-relaxed">
-              On the manga page, look for the <strong>Edition / Source</strong> dropdown and switch to the <em>Official Colored Edition</em> to read 760+ chapters directly inside this website without external links!
-            </p>
           </div>
         </div>
       </div>
@@ -263,6 +386,38 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
               {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Chapter'}
             </span>
           </div>
+
+          {/* Quick Chapter Selector */}
+          {navData?.chapters && navData.chapters.length > 0 && (
+            <div className="flex items-center gap-1 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+              <button
+                onClick={() => navData?.prevChapter && navigateToChapter(navData.prevChapter.id)}
+                disabled={!navData?.prevChapter}
+                className="p-1 rounded-lg text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <select
+                value={initialData.chapterId}
+                onChange={(e) => navigateToChapter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-zinc-200 px-1 py-0.5 focus:outline-none cursor-pointer max-w-[150px] truncate"
+              >
+                {navData.chapters.map((ch) => (
+                  <option key={ch.id} value={ch.id} className="bg-zinc-900 text-zinc-100">
+                    {ch.chapter ? `Chapter ${ch.chapter}` : 'Chapter'}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => navData?.nextChapter && navigateToChapter(navData.nextChapter.id)}
+                disabled={!navData?.nextChapter}
+                className="p-1 rounded-lg text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <Link
             href={mangaId ? `/manga/${mangaId}` : '/'}
             className="text-xs text-zinc-400 hover:text-white transition-colors"
@@ -278,46 +433,33 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
 
           <div>
             <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold uppercase tracking-wider mb-2">
-              Chapter Content Removed
+              Chapter Unavailable
             </span>
             <h2 className="text-xl font-bold text-white">
               {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Chapter'} Unavailable
             </h2>
             <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
               {initialData.errorMessage ||
-                'The scanlation files for this chapter upload have been removed from MangaDex servers.'}
+                'The scanlation files for this chapter could not be retrieved from the provider.'}
             </p>
           </div>
 
           <div className="pt-2 flex flex-col gap-2.5">
+            {navData?.nextChapter && (
+              <button
+                onClick={() => navigateToChapter(navData.nextChapter!.id)}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30"
+              >
+                Try Next Chapter ({navData.nextChapter.chapter ? `Ch. ${navData.nextChapter.chapter}` : 'Next'}) →
+              </button>
+            )}
+
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30"
+              className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-all border border-zinc-700"
             >
               Return to Chapter List
             </Link>
-
-            <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(
-                'One Piece chapter ' + (initialData.chapterNumber || '') + ' read online'
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700 transition-colors"
-            >
-              <span>Search on Google</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          </div>
-
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 text-left text-[11px] text-zinc-400 space-y-1">
-            <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Tip for One Piece:
-            </span>
-            <p className="leading-relaxed">
-              In the chapter list, switch the <strong>Edition</strong> to <em>Official Colored Edition</em> to read all 760+ chapters directly with full color pages!
-            </p>
           </div>
         </div>
       </div>
@@ -349,29 +491,79 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          {/* Back button & Chapter Info */}
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sm:gap-4">
+          {/* Back button & Chapter Navigation */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
-              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
+              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors shrink-0"
               title="Return to Manga details"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold text-white truncate">
-                {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Chapter'}
-                {initialData.title ? `: ${initialData.title}` : ''}
-              </h1>
-              <p className="text-xs text-zinc-400">
-                Page {currentPageIndex + 1} of {pages.length}
-              </p>
+
+            {/* Chapter Navigation Controls: Prev, Dropdown, Next */}
+            <div className="flex items-center gap-1 bg-zinc-900/90 rounded-xl p-1 border border-zinc-800 shadow-sm">
+              {/* Previous Chapter */}
+              <button
+                onClick={() => navData?.prevChapter && navigateToChapter(navData.prevChapter.id)}
+                disabled={!navData?.prevChapter}
+                className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                title={
+                  navData?.prevChapter
+                    ? `Previous Chapter (${navData.prevChapter.chapter ? `Ch. ${navData.prevChapter.chapter}` : 'Prev'}) [P or []`
+                    : 'No previous chapter'
+                }
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Chapter Dropdown Select */}
+              <div className="relative flex items-center">
+                <select
+                  value={initialData.chapterId}
+                  onChange={(e) => navigateToChapter(e.target.value)}
+                  disabled={isLoadingNav || !navData?.chapters?.length}
+                  className="bg-transparent text-xs font-bold text-zinc-200 hover:text-white px-2 py-1 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[190px] md:max-w-[240px] truncate"
+                >
+                  {navData?.chapters && navData.chapters.length > 0 ? (
+                    navData.chapters.map((ch) => (
+                      <option key={ch.id} value={ch.id} className="bg-zinc-900 text-zinc-100">
+                        {ch.chapter ? `Chapter ${ch.chapter}` : 'Chapter'}
+                        {ch.title ? `: ${ch.title}` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <option value={initialData.chapterId} className="bg-zinc-900 text-zinc-100">
+                      {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Current Chapter'}
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              {/* Next Chapter */}
+              <button
+                onClick={() => navData?.nextChapter && navigateToChapter(navData.nextChapter.id)}
+                disabled={!navData?.nextChapter}
+                className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                title={
+                  navData?.nextChapter
+                    ? `Next Chapter (${navData.nextChapter.chapter ? `Ch. ${navData.nextChapter.chapter}` : 'Next'}) [N or ]]`
+                    : 'No next chapter'
+                }
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
+
+            {/* Page Count info */}
+            <span className="hidden lg:inline text-xs text-zinc-400 truncate">
+              Page {currentPageIndex + 1}/{pages.length}
+            </span>
           </div>
 
           {/* Reader Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Reading Mode Switcher */}
             <div className="flex items-center rounded-xl bg-zinc-900 border border-zinc-800 p-0.5">
               <button
@@ -427,7 +619,7 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
 
       {/* READER CONTENT AREA */}
       <main
-        className={`w-full ${getWidthClass()} transition-all duration-300 pt-16 pb-24 min-h-screen flex flex-col items-center`}
+        className={`w-full ${getWidthClass()} transition-all duration-300 pt-16 pb-24 min-h-screen flex flex-col items-center px-2 sm:px-0`}
         onClick={() => setShowBars((prev) => !prev)}
       >
         {pages.length === 0 ? (
@@ -458,7 +650,6 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
                   alt={`Page ${page.pageNumber}`}
                   className="w-full h-auto block select-none pointer-events-auto shadow-md"
                   loading={index <= 2 ? 'eager' : 'lazy'}
-                  // Fetch priority high for first 2 pages, standard/low for subsequent
                   fetchPriority={index === 0 ? 'high' : undefined}
                   onLoad={() => {
                     setLoadedPages((prev) => ({ ...prev, [index]: true }));
@@ -528,6 +719,83 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
             </button>
           </div>
         )}
+
+        {/* END OF CHAPTER NAVIGATION CARD */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full mt-10 p-6 sm:p-8 rounded-2xl bg-zinc-900/90 border border-zinc-800 backdrop-blur-md shadow-2xl text-center space-y-6"
+        >
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold uppercase tracking-wider">
+              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+              Finished Reading
+            </span>
+            <h3 className="text-xl sm:text-2xl font-bold text-white">
+              {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Chapter Completed'}
+              {initialData.title ? ` - ${initialData.title}` : ''}
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400">
+              Continue reading the next chapter or pick from the chapter list below
+            </p>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto">
+            {/* Previous Chapter */}
+            <button
+              onClick={() => navData?.prevChapter && navigateToChapter(navData.prevChapter.id)}
+              disabled={!navData?.prevChapter}
+              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-zinc-700 transition-all active:scale-98"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>
+                {navData?.prevChapter?.chapter ? `Chapter ${navData.prevChapter.chapter}` : 'Previous Chapter'}
+              </span>
+            </button>
+
+            {/* Next Chapter (Highlight) */}
+            <button
+              onClick={() => navData?.nextChapter && navigateToChapter(navData.nextChapter.id)}
+              disabled={!navData?.nextChapter}
+              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:opacity-30 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-102 active:scale-98"
+            >
+              <span>
+                {navData?.nextChapter?.chapter ? `Chapter ${navData.nextChapter.chapter}` : 'Next Chapter'}
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Quick Dropdown & Manga Overview Return */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            {navData?.chapters && navData.chapters.length > 0 && (
+              <div className="relative">
+                <select
+                  value={initialData.chapterId}
+                  onChange={(e) => navigateToChapter(e.target.value)}
+                  className="bg-zinc-800 text-xs font-medium text-zinc-200 px-4 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-xs"
+                >
+                  {navData.chapters.map((ch) => (
+                    <option key={ch.id} value={ch.id}>
+                      {ch.chapter ? `Chapter ${ch.chapter}` : 'Chapter'}
+                      {ch.title ? `: ${ch.title}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {mangaId && (
+              <Link
+                href={`/manga/${mangaId}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-400" />
+                <span>Manga Overview</span>
+              </Link>
+            )}
+          </div>
+        </div>
       </main>
 
       {/* FLOATING BOTTOM ACTION BAR */}
@@ -538,17 +806,31 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
             : 'translate-y-12 opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 shadow-2xl text-xs text-zinc-300">
+        <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-2xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 shadow-2xl text-xs text-zinc-300">
+          {/* Quick Chapter Navigation in Bottom Bar */}
+          {navData?.prevChapter && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateToChapter(navData.prevChapter!.id);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-colors"
+              title={`Previous Chapter (${navData.prevChapter.chapter || ''}) [P]`}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Prev Ch</span>
+            </button>
+          )}
+
           {/* Progress Indicator */}
           <span className="font-semibold text-white px-2">
             {currentPageIndex + 1} / {pages.length}
           </span>
 
-          <div className="h-4 w-px bg-zinc-700 mx-1" />
-
           {/* Quick Page Prev/Next in Single Mode */}
           {readingMode === 'single' && (
             <>
+              <div className="h-4 w-px bg-zinc-700 mx-1" />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -571,9 +853,27 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="h-4 w-px bg-zinc-700 mx-1" />
             </>
           )}
+
+          {navData?.nextChapter && (
+            <>
+              <div className="h-4 w-px bg-zinc-700 mx-1" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateToChapter(navData.nextChapter!.id);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-sm"
+                title={`Next Chapter (${navData.nextChapter.chapter || ''}) [N]`}
+              >
+                <span className="hidden sm:inline">Next Ch</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+
+          <div className="h-4 w-px bg-zinc-700 mx-1" />
 
           {/* Back to top */}
           <button
@@ -592,4 +892,3 @@ export default function ChapterReader({ initialData, mangaId }: ChapterReaderPro
     </div>
   );
 }
-
