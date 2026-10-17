@@ -9,7 +9,6 @@ const BASE_BROWSER_HEADERS: Record<string, string> = {
   'User-Agent': FIREFOX_UA,
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.5',
-  'Accept-Encoding': 'gzip, deflate, br',
   DNT: '1',
   Connection: 'keep-alive',
   'Upgrade-Insecure-Requests': '1',
@@ -36,17 +35,70 @@ function cleanTitle(raw: string): string {
     .toLowerCase();
 }
 
-const DEFAULT_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+/**
+ * Resilient fetcher for WeebCentral endpoints.
+ * Avoids incompatible third-party proxies that override Referer with other domains.
+ */
+async function fetchWeebcentral(url: string, referer: string): Promise<Response> {
+  // 1. Primary: Direct fetch with Firefox headers and HTMX flags
+  try {
+    const res = await fetch(url, {
+      headers: HTMX_HEADERS(referer),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (res.ok) {
+      return res;
+    }
+    console.warn(`Direct WeebCentral fetch returned HTTP ${res.status} for ${url}`);
+  } catch (err) {
+    console.warn(`Direct WeebCentral fetch failed for ${url}:`, err);
+  }
 
-function buildProxiedUrl(targetUrl: string): string {
-  const proxy = (
-    process.env.CLOUDFLARE_PROXY_URL ||
-    process.env.CLOUDFLARE_PROXY_UR ||
-    process.env.PROXY_URL ||
-    DEFAULT_PROXY
-  ).trim();
-  const cleanProxy = proxy.replace(/\/+$/, '');
-  return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
+  // 2. Secondary: Direct fetch with Chrome headers and HTMX flags
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'text/html, */*; q=0.01',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'HX-Request': 'true',
+        Referer: referer,
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+      },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (res.ok) {
+      return res;
+    }
+  } catch (err) {
+    console.warn(`Chrome WeebCentral fetch failed for ${url}:`, err);
+  }
+
+  // 3. Tertiary: Dedicated WeebCentral proxy if explicitly configured (never generic NetTruyen worker)
+  const dedicatedProxy = process.env.WEEBCENTRAL_PROXY_URL?.trim();
+  if (dedicatedProxy) {
+    try {
+      const cleanProxy = dedicatedProxy.replace(/\/+$/, '');
+      const proxiedUrl = `${cleanProxy}/?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxiedUrl, {
+        headers: HTMX_HEADERS(referer),
+        signal: AbortSignal.timeout(12000),
+      });
+      if (res.ok) {
+        return res;
+      }
+    } catch (err) {
+      console.warn(`Dedicated proxy WeebCentral fetch failed:`, err);
+    }
+  }
+
+  // Final direct attempt to return whatever status upstream returned
+  return await fetch(url, {
+    headers: HTMX_HEADERS(referer),
+  });
 }
 
 /**
@@ -65,9 +117,7 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
           q
         )}&limit=10&offset=0&sort=Best+Match&order=Descending&official=Any&anime=Any&adult=Any&display_mode=Full+Display`;
 
-        const res = await fetch(buildProxiedUrl(url), {
-          headers: HTMX_HEADERS(`${BASE_URL}/search`),
-        });
+        const res = await fetchWeebcentral(url, `${BASE_URL}/search`);
 
         if (!res.ok) {
           console.error(`WeebCentral search error for "${title}": HTTP ${res.status}`);
@@ -118,9 +168,7 @@ export async function getWeebcentralChapters(
   return getOrSetCache(cacheKey, 1800, async () => {
     try {
       const url = `${BASE_URL}/series/${mangaId}/full-chapter-list`;
-      const res = await fetch(buildProxiedUrl(url), {
-        headers: HTMX_HEADERS(`${BASE_URL}/series/${mangaId}`),
-      });
+      const res = await fetchWeebcentral(url, `${BASE_URL}/series/${mangaId}`);
 
       if (!res.ok) {
         console.error(`WeebCentral chapters error for "${mangaId}": HTTP ${res.status}`);
@@ -208,20 +256,14 @@ export async function getWeebcentralChapterPages(
   return getOrSetCache(cacheKey, 3600, async () => {
     try {
       let html = '';
-      const url = buildProxiedUrl(
-        `${BASE_URL}/chapters/${cleanId}/images?is_prev=False&current_page=1&reading_style=long_strip`
-      );
-      const res = await fetch(url, {
-        headers: HTMX_HEADERS(`${BASE_URL}/chapters/${cleanId}`),
-      });
+      const url = `${BASE_URL}/chapters/${cleanId}/images?is_prev=False&current_page=1&reading_style=long_strip`;
+      const res = await fetchWeebcentral(url, `${BASE_URL}/chapters/${cleanId}`);
 
       if (res.ok) {
         html = await res.text();
       } else {
         // Fallback: try direct chapter reader page
-        const fallbackRes = await fetch(buildProxiedUrl(`${BASE_URL}/chapters/${cleanId}`), {
-          headers: HTMX_HEADERS(`${BASE_URL}/`),
-        });
+        const fallbackRes = await fetchWeebcentral(`${BASE_URL}/chapters/${cleanId}`, `${BASE_URL}/`);
         if (fallbackRes.ok) {
           html = await fallbackRes.text();
         } else {
