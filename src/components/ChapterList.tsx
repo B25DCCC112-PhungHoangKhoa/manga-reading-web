@@ -55,6 +55,8 @@ export default function ChapterList({
   // Handle switching provider / edition / server
   const handleEditionChange = async (val: string) => {
     setSelectedEditionId(val);
+    setSelectedLanguage('all');
+    setSearch('');
     setIsLoadingEdition(true);
     try {
       let url = `/api/manga/${mangaId}/chapters`;

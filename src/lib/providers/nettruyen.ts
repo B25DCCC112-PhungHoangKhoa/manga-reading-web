@@ -16,6 +16,12 @@ export interface NetTruyenMatch {
 function cleanTitle(raw: string): string {
   return raw
     .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
+    .trim();
+}
+
+function stripSubtitle(raw: string): string {
+  return raw
+    .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
     .replace(/[:\-–—].*$/, '')
     .trim();
 }
@@ -39,13 +45,25 @@ function buildProxiedUrl(targetUrl: string): string {
 export async function searchNettruyen(
   titles: string[]
 ): Promise<NetTruyenMatch | null> {
-  const cacheKey = `nettruyen:search:v4:${titles.join(':')}`;
+  const cacheKey = `nettruyen:search:v5:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
-    for (const rawTitle of titles) {
-      if (!rawTitle) continue;
-      const q = cleanTitle(rawTitle);
-      if (!q || q.length < 2) continue;
+    // Generate candidate search queries: both full title and title without subtitle
+    const candidateQueries: string[] = [];
+    for (const raw of titles) {
+      if (!raw) continue;
+      const full = cleanTitle(raw);
+      const stripped = stripSubtitle(raw);
+      if (full && full.length >= 2 && !candidateQueries.includes(full)) {
+        candidateQueries.push(full);
+      }
+      if (stripped && stripped !== full && stripped.length >= 2 && !candidateQueries.includes(stripped)) {
+        candidateQueries.push(stripped);
+      }
+    }
 
+    const queriesToTest = candidateQueries.slice(0, 3);
+
+    for (const q of queriesToTest) {
       for (const mirror of MIRROR_URLS) {
         try {
           const searchUrl = buildProxiedUrl(`${mirror}/tim-truyen?keyword=${encodeURIComponent(q)}`);
@@ -56,6 +74,7 @@ export async function searchNettruyen(
               Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
               'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
             },
+            signal: AbortSignal.timeout(3500),
           });
 
           if (!res.ok) continue;
@@ -109,7 +128,7 @@ export async function searchNettruyen(
             return firstCandidate;
           }
         } catch (err) {
-          console.error(`NetTruyen search error for "${rawTitle}" on ${mirror}:`, err);
+          console.error(`NetTruyen search error for "${q}" on ${mirror}:`, err);
         }
       }
     }
@@ -139,6 +158,7 @@ export async function getNettruyenChapters(
             Referer: `${BASE_URL}/`,
             Accept: 'text/html,application/xhtml+xml',
           },
+          signal: AbortSignal.timeout(4000),
         });
         if (pageRes.ok) {
           const pageHtml = await pageRes.text();
@@ -169,6 +189,7 @@ export async function getNettruyenChapters(
               'X-Requested-With': 'XMLHttpRequest',
               Accept: 'application/json, text/javascript, */*; q=0.01',
             },
+            signal: AbortSignal.timeout(4000),
           });
 
           if (ajaxRes.ok) {
@@ -232,6 +253,7 @@ export async function getNettruyenChapters(
           Referer: `${BASE_URL}/`,
           Accept: 'text/html,application/xhtml+xml',
         },
+        signal: AbortSignal.timeout(4000),
       });
 
       if (!pageRes.ok) return [];

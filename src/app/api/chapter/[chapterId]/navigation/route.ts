@@ -8,6 +8,7 @@ import {
 import { MangaDexChapter } from '@/lib/types';
 
 export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 export async function GET(
   request: NextRequest,
@@ -145,3 +146,4 @@ export async function GET(
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
+
