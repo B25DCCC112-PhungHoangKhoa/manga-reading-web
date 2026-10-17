@@ -26,10 +26,16 @@ export async function searchWeebcentralClient(titles: string[]): Promise<string 
       );
 
       const res = await fetch(searchUrl, {
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(4000),
       });
 
-      if (!res.ok) continue;
+      if (!res.ok) {
+        if (res.status === 523 || res.status === 521 || res.status >= 500) {
+          console.warn(`WeebCentral server is down (HTTP ${res.status}). Aborting client search.`);
+          break;
+        }
+        continue;
+      }
 
       const html = await res.text();
 

@@ -57,28 +57,20 @@ function buildProxiedUrl(targetUrl: string): string {
  * the stream instead of receiving raw compressed Brotli/gzip binary bytes.
  */
 async function fetchWeebcentral(url: string, referer: string): Promise<Response> {
-  // 1. Primary: Cloudflare worker proxy with Firefox headers (bypasses Vercel/AWS IP blocks)
+  const isOriginDown = (status: number) =>
+    status === 523 || status === 521 || status === 522 || status === 502 || status === 503 || status === 504;
+
+  // 1. Direct fetch (best if not blocked or running on dev/residential connection)
   try {
-    const proxiedUrl = buildProxiedUrl(url);
-    const res = await fetch(proxiedUrl, {
+    const res = await fetch(url, {
       headers: HTMX_HEADERS(referer),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(4000),
     });
     if (res.ok) {
       return res;
     }
-    console.warn(`Proxied WeebCentral fetch returned HTTP ${res.status} for ${url}`);
-  } catch (err) {
-    console.warn(`Proxied WeebCentral fetch failed for ${url}:`, err);
-  }
-
-  // 2. Secondary: Direct fetch (in case running on residential/dev connection)
-  try {
-    const res = await fetch(url, {
-      headers: HTMX_HEADERS(referer),
-      signal: AbortSignal.timeout(10000),
-    });
-    if (res.ok) {
+    if (isOriginDown(res.status)) {
+      console.warn(`WeebCentral origin is unreachable (HTTP ${res.status}). Aborting retries.`);
       return res;
     }
     console.warn(`Direct WeebCentral fetch returned HTTP ${res.status} for ${url}`);
@@ -86,33 +78,29 @@ async function fetchWeebcentral(url: string, referer: string): Promise<Response>
     console.warn(`Direct WeebCentral fetch failed for ${url}:`, err);
   }
 
-  // 3. Tertiary: Cloudflare worker proxy with Chrome headers
+  // 2. Cloudflare worker proxy
   try {
     const proxiedUrl = buildProxiedUrl(url);
     const res = await fetch(proxiedUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        Accept: 'text/html, */*; q=0.01',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'HX-Request': 'true',
-        Referer: referer,
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-      },
-      signal: AbortSignal.timeout(15000),
+      headers: HTMX_HEADERS(referer),
+      signal: AbortSignal.timeout(4000),
     });
     if (res.ok) {
       return res;
     }
+    if (isOriginDown(res.status)) {
+      console.warn(`Proxied WeebCentral origin is unreachable (HTTP ${res.status}).`);
+      return res;
+    }
+    console.warn(`Proxied WeebCentral fetch returned HTTP ${res.status} for ${url}`);
   } catch (err) {
-    console.warn(`Chrome proxy WeebCentral fetch failed for ${url}:`, err);
+    console.warn(`Proxied WeebCentral fetch failed for ${url}:`, err);
   }
 
-  // Final fallback attempt
-  return await fetch(buildProxiedUrl(url), {
-    headers: HTMX_HEADERS(referer),
+  // Fast fail response instead of hanging indefinitely
+  return new Response('WeebCentral server unreachable', {
+    status: 523,
+    statusText: 'Origin Unreachable',
   });
 }
 
@@ -136,6 +124,9 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
 
         if (!res.ok) {
           console.error(`WeebCentral search error for "${q}": HTTP ${res.status}`);
+          if (res.status === 523 || res.status === 521 || res.status >= 500) {
+            break;
+          }
           continue;
         }
 

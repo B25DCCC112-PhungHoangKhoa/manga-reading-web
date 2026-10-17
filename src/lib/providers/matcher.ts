@@ -213,3 +213,4 @@ export function generateSearchQueries(titles: string[], targetLanguage?: 'vi' | 
 
   return Array.from(querySet);
 }
+

@@ -535,9 +535,15 @@ export default function ChapterReader({
       }
 
       if (targetChapters.length === 0) {
-        setFeedbackMessage(
-          `This manga is not available on ${targetProviderObj?.name || targetProviderId}`
-        );
+        if (targetProviderId === 'weebcentral') {
+          setFeedbackMessage(
+            'WeebCentral server is currently unreachable (Error 523: Origin Down). Please use MangaDex or MangaPill.'
+          );
+        } else {
+          setFeedbackMessage(
+            `This manga is not available on ${targetProviderObj?.name || targetProviderId}`
+          );
+        }
         return;
       }
 
