@@ -36,14 +36,15 @@ function cleanTitle(raw: string): string {
     .toLowerCase();
 }
 
+const DEFAULT_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+
 function buildProxiedUrl(targetUrl: string): string {
   const proxy = (
     process.env.CLOUDFLARE_PROXY_URL ||
     process.env.CLOUDFLARE_PROXY_UR ||
     process.env.PROXY_URL ||
-    ''
+    DEFAULT_PROXY
   ).trim();
-  if (!proxy) return targetUrl;
   const cleanProxy = proxy.replace(/\/+$/, '');
   return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
 }

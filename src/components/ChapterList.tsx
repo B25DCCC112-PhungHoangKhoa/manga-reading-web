@@ -212,8 +212,8 @@ export default function ChapterList({
           >
             <option value="mangadex">MangaDex (Default)</option>
             <option value="mangapill">MangaPill (Recommended)</option>
-            <option value="nettruyen">🇻🇳 NetTruyen (Local / Dev)</option>
-            <option value="weebcentral">WeebCentral (Local / Dev)</option>
+            <option value="nettruyen">🇻🇳 NetTruyen (Tiếng Việt)</option>
+            <option value="weebcentral">WeebCentral</option>
             <option value="all">⚡ All Providers (Merged)</option>
             {editions.map((ed) => (
               <option key={ed.id} value={ed.id}>
