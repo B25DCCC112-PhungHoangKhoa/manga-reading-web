@@ -2,8 +2,32 @@ import { getOrSetCache } from '../cache';
 import { MangaDexChapter, ChapterPagesResponse } from '../types';
 
 const BASE_URL = 'https://weebcentral.com';
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const FIREFOX_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0';
+
+const BASE_BROWSER_HEADERS: Record<string, string> = {
+  'User-Agent': FIREFOX_UA,
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.5',
+  'Accept-Encoding': 'gzip, deflate, br',
+  DNT: '1',
+  Connection: 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+};
+
+const HTMX_HEADERS = (referer: string): Record<string, string> => ({
+  ...BASE_BROWSER_HEADERS,
+  'HX-Request': 'true',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-origin',
+  Accept: 'text/html, */*; q=0.01',
+  Referer: referer,
+});
 
 function cleanTitle(raw: string): string {
   return raw
@@ -29,32 +53,36 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
         )}&limit=10&offset=0&sort=Best+Match&order=Descending&official=Any&anime=Any&adult=Any&display_mode=Full+Display`;
 
         const res = await fetch(url, {
-          headers: {
-            'User-Agent': USER_AGENT,
-            Referer: 'https://google.com',
-            Accept: '*/*',
-          },
+          headers: HTMX_HEADERS(`${BASE_URL}/search`),
         });
 
-        if (!res.ok) continue;
+        if (!res.ok) {
+          console.error(`WeebCentral search error for "${title}": HTTP ${res.status}`);
+          continue;
+        }
 
         const html = await res.text();
 
-        // Extract series ID and title from HTML: href="https://weebcentral.com/series/01JEXZK546WKQ91SNBTXYPT3VN"
-        // or /series/01JEXZK546WKQ91SNBTXYPT3VN
-        const regex = /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
+        // Pattern 1: Match /series/ID/slug links
+        const regex = /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)(\/[^"']*)?["'][^>]*>([\s\S]*?)<\/a>/gi;
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(html)) !== null) {
           const id = match[1];
-          const innerText = match[2].replace(/<[^>]*>/g, '').trim().toLowerCase();
+          const slug = (match[2] || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+          const innerText = match[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
-          if (innerText.includes(q) || q.includes(innerText)) {
+          if (
+            innerText.includes(q) ||
+            q.includes(innerText) ||
+            slug.includes(q) ||
+            q.includes(slug.trim())
+          ) {
             return id;
           }
         }
 
-        // If no exact title match found, pick the first series link if present
+        // Pattern 2: Fallback to the first series link in results
         const fallbackMatch = /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)/i.exec(html);
         if (fallbackMatch?.[1]) {
           return fallbackMatch[1];
@@ -78,14 +106,13 @@ export async function getWeebcentralChapters(
     try {
       const url = `${BASE_URL}/series/${mangaId}/full-chapter-list`;
       const res = await fetch(url, {
-        headers: {
-          'User-Agent': USER_AGENT,
-          Referer: `${BASE_URL}/series/${mangaId}`,
-          Accept: 'text/html,application/xhtml+xml',
-        },
+        headers: HTMX_HEADERS(`${BASE_URL}/series/${mangaId}`),
       });
 
-      if (!res.ok) return [];
+      if (!res.ok) {
+        console.error(`WeebCentral chapters error for "${mangaId}": HTTP ${res.status}`);
+        return [];
+      }
 
       const html = await res.text();
       const chapters: MangaDexChapter[] = [];
@@ -170,11 +197,7 @@ export async function getWeebcentralChapterPages(
       let html = '';
       const url = `${BASE_URL}/chapters/${cleanId}/images?is_prev=False&current_page=1&reading_style=long_strip`;
       const res = await fetch(url, {
-        headers: {
-          'User-Agent': USER_AGENT,
-          Referer: `${BASE_URL}/chapters/${cleanId}`,
-          Accept: 'text/html,application/xhtml+xml',
-        },
+        headers: HTMX_HEADERS(`${BASE_URL}/chapters/${cleanId}`),
       });
 
       if (res.ok) {
@@ -182,11 +205,7 @@ export async function getWeebcentralChapterPages(
       } else {
         // Fallback: try direct chapter reader page
         const fallbackRes = await fetch(`${BASE_URL}/chapters/${cleanId}`, {
-          headers: {
-            'User-Agent': USER_AGENT,
-            Referer: `${BASE_URL}/`,
-            Accept: 'text/html,application/xhtml+xml',
-          },
+          headers: HTMX_HEADERS(`${BASE_URL}/`),
         });
         if (fallbackRes.ok) {
           html = await fallbackRes.text();

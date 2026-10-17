@@ -292,39 +292,55 @@ export default function ChapterList({
 
             <div>
               <h4 className="text-base font-bold text-zinc-200">
-                {selectedEditionId === 'mangadex'
+                {selectedEditionId === 'weebcentral'
+                  ? 'WeebCentral chapters unavailable'
+                  : selectedEditionId === 'mangadex'
                   ? 'No chapters currently available on MangaDex'
                   : 'No chapters found for this provider'}
               </h4>
               <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
-                {selectedEditionId === 'mangadex'
-                  ? 'MangaDex does not host chapters for this series. You can switch to WeebCentral or MangaPill to check for available chapters!'
+                {selectedEditionId === 'weebcentral'
+                  ? 'WeebCentral is protected by Cloudflare and may block cloud hosting IPs in production. Switch to MangaPill (which has 1,100+ chapters) or MangaDex to read this manga!'
+                  : selectedEditionId === 'mangadex'
+                  ? 'MangaDex does not host chapters for this series. Try switching to MangaPill or WeebCentral to read this manga!'
                   : 'Try selecting a different provider from the dropdown to check for available chapters.'}
               </p>
             </div>
 
-            {selectedEditionId === 'mangadex' && (
-              <div className="pt-2 flex flex-wrap gap-2 justify-center">
+            <div className="pt-2 flex flex-wrap gap-2 justify-center">
+              {selectedEditionId !== 'mangapill' && (
+                <button
+                  onClick={() => handleEditionChange('mangapill')}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                >
+                  ⚡ Switch to MangaPill (Recommended)
+                </button>
+              )}
+              {selectedEditionId !== 'mangadex' && (
+                <button
+                  onClick={() => handleEditionChange('mangadex')}
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
+                >
+                  Switch to MangaDex
+                </button>
+              )}
+              {selectedEditionId !== 'weebcentral' && (
                 <button
                   onClick={() => handleEditionChange('weebcentral')}
-                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
                 >
                   Check WeebCentral
                 </button>
-                <button
-                  onClick={() => handleEditionChange('mangapill')}
-                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
-                >
-                  Check MangaPill
-                </button>
+              )}
+              {selectedEditionId !== 'all' && (
                 <button
                   onClick={() => handleEditionChange('all')}
                   className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
                 >
                   Check All Providers
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800 text-left text-xs text-zinc-400 space-y-1.5">
               <div className="flex items-center gap-1.5 text-zinc-300 font-semibold">
