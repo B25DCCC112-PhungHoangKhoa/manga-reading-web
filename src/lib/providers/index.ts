@@ -44,7 +44,19 @@ export async function getCompleteChaptersAcrossProviders(
   // If a specific provider is requested:
   if (selectedProvider === 'nettruyen') {
     const match = await searchNettruyen(titles);
-    return match ? await getNettruyenChapters(match.comicSlug, match.comicId) : [];
+    let chapters = match ? await getNettruyenChapters(match.comicSlug, match.comicId) : [];
+
+    // Fallback: If NetTruyen is blocked or has 0 chapters on cloud datacenter IPs (Vercel),
+    // automatically fall back to MangaDex Vietnamese chapters
+    if (chapters.length === 0 && mangaDexId) {
+      console.warn('NetTruyen returned 0 chapters on Vercel, falling back to MangaDex Vietnamese feed');
+      try {
+        chapters = await getMangaChapters(mangaDexId, 500, 0, 'vi');
+      } catch (err) {
+        console.error('MangaDex Vietnamese fallback error:', err);
+      }
+    }
+    return chapters;
   }
 
   if (selectedProvider === 'weebcentral') {

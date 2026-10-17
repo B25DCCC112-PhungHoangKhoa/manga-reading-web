@@ -34,10 +34,13 @@ const ALLOWED_HOST_SUFFIXES = [
   'readberserk.com',
   'readvinlandsaga.com',
   'cloud-zzz.com',
+  'kcgsbok.com',
+  'nettruyen.gg',
   'nettruyenar.com',
   'nettruyenww.com',
   'nettruyenrr.com',
   'nettruyen.com',
+  'truyenvua.com',
   'truyenqqviet.com',
   'truyenqq.com',
 ];
@@ -142,10 +145,12 @@ function getRefererForUrl(targetUrl: string): string {
     // NetTruyen CDNs
     if (
       host.includes('cloud-zzz') ||
+      host.includes('kcgsbok') ||
       host.includes('nettruyen') ||
-      host.includes('truyenqq')
+      host.includes('truyenqq') ||
+      host.includes('truyenvua')
     ) {
-      return 'https://nettruyenar.com/';
+      return 'https://nettruyen.gg/';
     }
 
     // Comick
