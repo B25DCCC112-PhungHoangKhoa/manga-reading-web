@@ -243,6 +243,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
             chapters={chapters}
             mangaId={manga.id}
             mangaTitle={title}
+            mangaTitles={titles}
             editions={editions}
             initialMangaDexId={mangadexId || undefined}
             initialProvider={initialProvider}

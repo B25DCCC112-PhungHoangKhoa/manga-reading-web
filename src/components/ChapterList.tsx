@@ -23,6 +23,7 @@ interface ChapterListProps {
   chapters: MangaDexChapter[];
   mangaId: string | number;
   mangaTitle?: string;
+  mangaTitles?: string[];
   editions?: MangaEdition[];
   initialMangaDexId?: string;
   initialProvider?: 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' | 'all';
@@ -32,6 +33,7 @@ export default function ChapterList({
   chapters: initialChapters,
   mangaId,
   mangaTitle = 'this manga',
+  mangaTitles = [],
   editions = [],
   initialMangaDexId,
   initialProvider = 'mangadex',
@@ -51,7 +53,21 @@ export default function ChapterList({
     if (initialProvider) {
       setSelectedEditionId(initialProvider);
     }
-  }, [initialChapters, initialProvider]);
+    // If NetTruyen was selected initially but has no real NetTruyen chapters
+    if (
+      initialProvider === 'nettruyen' &&
+      !initialChapters.some((c) => c.id.startsWith('nettruyen-'))
+    ) {
+      const allCandidateTitles = Array.from(
+        new Set([mangaTitle, ...(mangaTitles || [])])
+      ).filter(Boolean);
+      fetchNetTruyenClientSide(allCandidateTitles).then((clientChapters) => {
+        if (clientChapters && clientChapters.length > 0) {
+          setChapters(clientChapters);
+        }
+      });
+    }
+  }, [initialChapters, initialProvider, mangaTitle, mangaTitles]);
 
   // Handle switching provider / edition / server
   const handleEditionChange = async (val: string) => {
@@ -76,16 +92,22 @@ export default function ChapterList({
         }
       }
 
-      // If server-side returned 0 chapters for NetTruyen (e.g. Vercel datacenter blocked by Cloudflare),
+      // If server-side returned 0 chapters or fallback chapters for NetTruyen,
       // seamlessly execute client-side browser fetch via user's residential connection
-      if (val === 'nettruyen' && loadedChapters.length === 0) {
-        try {
-          const clientChapters = await fetchNetTruyenClientSide([mangaTitle]);
-          if (clientChapters && clientChapters.length > 0) {
-            loadedChapters = clientChapters;
+      if (val === 'nettruyen') {
+        const hasRealNetTruyen = loadedChapters.some((c) => c.id.startsWith('nettruyen-'));
+        if (!hasRealNetTruyen || loadedChapters.length === 0) {
+          try {
+            const allCandidateTitles = Array.from(
+              new Set([mangaTitle, ...(mangaTitles || [])])
+            ).filter(Boolean);
+            const clientChapters = await fetchNetTruyenClientSide(allCandidateTitles);
+            if (clientChapters && clientChapters.length > 0) {
+              loadedChapters = clientChapters;
+            }
+          } catch (clientErr) {
+            console.warn('Client-side NetTruyen fetch failed:', clientErr);
           }
-        } catch (clientErr) {
-          console.warn('Client-side NetTruyen fetch failed:', clientErr);
         }
       }
 
