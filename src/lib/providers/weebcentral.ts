@@ -35,16 +35,47 @@ function cleanTitle(raw: string): string {
     .toLowerCase();
 }
 
+const DEFAULT_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+
+function buildProxiedUrl(targetUrl: string): string {
+  const proxy = (
+    process.env.WEEBCENTRAL_PROXY_URL ||
+    process.env.CLOUDFLARE_PROXY_URL ||
+    process.env.CLOUDFLARE_PROXY_UR ||
+    process.env.PROXY_URL ||
+    DEFAULT_PROXY
+  ).trim();
+  const cleanProxy = proxy.replace(/\/+$/, '');
+  return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
+}
+
 /**
  * Resilient fetcher for WeebCentral endpoints.
- * Avoids incompatible third-party proxies that override Referer with other domains.
+ * Routes through Cloudflare worker proxy to bypass Vercel datacenter blocks.
+ * OMITTING 'Accept-Encoding' is critical: allows Node.js/undici to auto-decompress
+ * the stream instead of receiving raw compressed Brotli/gzip binary bytes.
  */
 async function fetchWeebcentral(url: string, referer: string): Promise<Response> {
-  // 1. Primary: Direct fetch with Firefox headers and HTMX flags
+  // 1. Primary: Cloudflare worker proxy with Firefox headers (bypasses Vercel/AWS IP blocks)
+  try {
+    const proxiedUrl = buildProxiedUrl(url);
+    const res = await fetch(proxiedUrl, {
+      headers: HTMX_HEADERS(referer),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.ok) {
+      return res;
+    }
+    console.warn(`Proxied WeebCentral fetch returned HTTP ${res.status} for ${url}`);
+  } catch (err) {
+    console.warn(`Proxied WeebCentral fetch failed for ${url}:`, err);
+  }
+
+  // 2. Secondary: Direct fetch (in case running on residential/dev connection)
   try {
     const res = await fetch(url, {
       headers: HTMX_HEADERS(referer),
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(10000),
     });
     if (res.ok) {
       return res;
@@ -54,9 +85,10 @@ async function fetchWeebcentral(url: string, referer: string): Promise<Response>
     console.warn(`Direct WeebCentral fetch failed for ${url}:`, err);
   }
 
-  // 2. Secondary: Direct fetch with Chrome headers and HTMX flags
+  // 3. Tertiary: Cloudflare worker proxy with Chrome headers
   try {
-    const res = await fetch(url, {
+    const proxiedUrl = buildProxiedUrl(url);
+    const res = await fetch(proxiedUrl, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -68,35 +100,17 @@ async function fetchWeebcentral(url: string, referer: string): Promise<Response>
         'Sec-Fetch-Mode': 'cors',
         'Sec-Fetch-Site': 'same-origin',
       },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(15000),
     });
     if (res.ok) {
       return res;
     }
   } catch (err) {
-    console.warn(`Chrome WeebCentral fetch failed for ${url}:`, err);
+    console.warn(`Chrome proxy WeebCentral fetch failed for ${url}:`, err);
   }
 
-  // 3. Tertiary: Dedicated WeebCentral proxy if explicitly configured (never generic NetTruyen worker)
-  const dedicatedProxy = process.env.WEEBCENTRAL_PROXY_URL?.trim();
-  if (dedicatedProxy) {
-    try {
-      const cleanProxy = dedicatedProxy.replace(/\/+$/, '');
-      const proxiedUrl = `${cleanProxy}/?url=${encodeURIComponent(url)}`;
-      const res = await fetch(proxiedUrl, {
-        headers: HTMX_HEADERS(referer),
-        signal: AbortSignal.timeout(12000),
-      });
-      if (res.ok) {
-        return res;
-      }
-    } catch (err) {
-      console.warn(`Dedicated proxy WeebCentral fetch failed:`, err);
-    }
-  }
-
-  // Final direct attempt to return whatever status upstream returned
-  return await fetch(url, {
+  // Final fallback attempt
+  return await fetch(buildProxiedUrl(url), {
     headers: HTMX_HEADERS(referer),
   });
 }
