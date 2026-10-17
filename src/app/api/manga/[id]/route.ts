@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMangaById } from '@/lib/anilist';
-import { resolveMangaDexId } from '@/lib/mangadex';
+import { resolveMangaDexId, getMangaDexAltTitles } from '@/lib/mangadex';
 
 export const runtime = 'nodejs';
 
@@ -26,15 +26,22 @@ export async function GET(
       manga.title.english,
       manga.title.romaji,
       manga.title.native,
+      ...(manga.synonyms || []),
     ].filter(Boolean) as string[];
 
     const mangadexId = await resolveMangaDexId(manga.id, titles);
+    let allTitles = titles;
+    if (mangadexId) {
+      const mdTitles = await getMangaDexAltTitles(mangadexId);
+      allTitles = Array.from(new Set([...titles, ...mdTitles]));
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         manga,
         mangadexId,
+        allTitles,
       },
     });
   } catch (err: unknown) {

@@ -157,6 +157,37 @@ export async function resolveMangaDexId(
 }
 
 /**
+ * Fetches all official alternative titles from MangaDex for a manga ID.
+ * This includes regional titles (English, Romaji, Vietnamese, Korean, etc.)
+ * which dramatically improves provider search accuracy across NetTruyen, WeebCentral, and MangaPill.
+ */
+export async function getMangaDexAltTitles(mangadexId: string): Promise<string[]> {
+  const cacheKey = `mangadex:altTitles:v1:${mangadexId}`;
+  return getOrSetCache(cacheKey, 86400, async () => {
+    try {
+      const res = await fetch(`${MANGADEX_API}/manga/${mangadexId}`, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      const alt: string[] = [];
+      if (json.data?.attributes?.title) {
+        alt.push(...Object.values(json.data.attributes.title as Record<string, string>));
+      }
+      if (Array.isArray(json.data?.attributes?.altTitles)) {
+        for (const item of json.data.attributes.altTitles) {
+          alt.push(...Object.values(item as Record<string, string>));
+        }
+      }
+      return Array.from(new Set(alt.map((s) => s?.trim()).filter(Boolean)));
+    } catch (err) {
+      console.warn('Failed to fetch MangaDex altTitles:', err);
+      return [];
+    }
+  });
+}
+
+/**
  * Searches MangaDex to find all legitimate editions (Standard, Colored, etc.) for a title
  */
 export async function getMangaEditions(

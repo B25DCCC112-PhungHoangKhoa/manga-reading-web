@@ -5,6 +5,7 @@ import {
   resolveMangaDexId,
   getMangaEditions,
   getCompleteChaptersAcrossProviders,
+  getMangaDexAltTitles,
 } from '@/lib/mangadex';
 
 export const runtime = 'nodejs';
@@ -58,6 +59,12 @@ export async function GET(
 
       // Discover companion editions (e.g. Colored edition with full in-app chapters)
       editions = await getMangaEditions(anilistId, titles);
+
+      // Enrich titles with MangaDex official alternative titles (improves NetTruyen/WeebCentral/MangaPill accuracy)
+      if (mangadexId) {
+        const mdTitles = await getMangaDexAltTitles(mangadexId);
+        titles = Array.from(new Set([...titles, ...mdTitles]));
+      }
     }
 
     const provider = (searchParams.get('provider') as 'all' | 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen') || 'mangadex';

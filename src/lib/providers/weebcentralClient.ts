@@ -1,4 +1,5 @@
 import { MangaDexChapter } from '../types';
+import { isTitleMatch, generateSearchQueries } from './matcher';
 
 const PROXY_URL = 'https://manga-proxy.phungvanquangdmx.workers.dev';
 const BASE_URL = 'https://weebcentral.com';
@@ -7,42 +8,16 @@ function buildUrl(target: string): string {
   return `${PROXY_URL}/?url=${encodeURIComponent(target)}`;
 }
 
-function cleanTitle(raw: string): string {
-  return raw
-    .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .toLowerCase();
-}
-
-function stripSubtitle(raw: string): string {
-  return raw
-    .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
-    .replace(/[:\-–—].*$/, '')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .toLowerCase();
-}
-
 /**
  * Client-side search on WeebCentral to resolve series ID.
  * Runs directly in user's browser via CORS proxy to bypass Vercel datacenter IP blocks.
  */
 export async function searchWeebcentralClient(titles: string[]): Promise<string | null> {
-  const candidateQueries: string[] = [];
-  for (const raw of titles) {
-    if (!raw) continue;
-    const full = cleanTitle(raw);
-    const stripped = stripSubtitle(raw);
-    if (full && full.length >= 2 && !candidateQueries.includes(full)) {
-      candidateQueries.push(full);
-    }
-    if (stripped && stripped !== full && stripped.length >= 2 && !candidateQueries.includes(stripped)) {
-      candidateQueries.push(stripped);
-    }
-  }
+  const candidateQueries = generateSearchQueries(titles, 'en');
 
-  for (const q of candidateQueries.slice(0, 4)) {
+  for (const q of candidateQueries.slice(0, 5)) {
+    if (!q || q.length < 2) continue;
+
     try {
       const searchUrl = buildUrl(
         `${BASE_URL}/search/data?text=${encodeURIComponent(
@@ -58,7 +33,7 @@ export async function searchWeebcentralClient(titles: string[]): Promise<string 
 
       const html = await res.text();
 
-      // Pattern 1: Match /series/ID/slug links
+      // Pattern: Match /series/ID/slug links
       const regex =
         /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)(\/[^"']*)?["'][^>]*>([\s\S]*?)<\/a>/gi;
       let match: RegExpExecArray | null;
@@ -69,23 +44,11 @@ export async function searchWeebcentralClient(titles: string[]): Promise<string 
         const innerText = match[3]
           .replace(/<[^>]*>/g, ' ')
           .replace(/\s+/g, ' ')
-          .trim()
-          .toLowerCase();
+          .trim();
 
-        if (
-          innerText.includes(q) ||
-          q.includes(innerText) ||
-          slug.includes(q) ||
-          q.includes(slug.trim())
-        ) {
+        if (isTitleMatch(innerText, titles) || isTitleMatch(slug, titles)) {
           return id;
         }
-      }
-
-      // Pattern 2: First series link fallback
-      const fallbackMatch = /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)/i.exec(html);
-      if (fallbackMatch?.[1]) {
-        return fallbackMatch[1];
       }
     } catch (err) {
       console.warn('Client WeebCentral search failed for query:', q, err);
@@ -256,3 +219,4 @@ export async function fetchWeebcentralChapterPagesClient(
     return [];
   }
 }
+

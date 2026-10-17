@@ -1,5 +1,6 @@
 import { getOrSetCache } from '../cache';
 import { MangaDexChapter, ChapterPagesResponse } from '../types';
+import { isTitleMatch, generateSearchQueries } from './matcher';
 
 const BASE_URL = 'https://nettruyen.gg';
 const MIRROR_URLS = ['https://nettruyen.gg', 'https://nettruyenar.com'];
@@ -11,19 +12,6 @@ export interface NetTruyenMatch {
   comicSlug: string;
   comicId?: string;
   title: string;
-}
-
-function cleanTitle(raw: string): string {
-  return raw
-    .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
-    .trim();
-}
-
-function stripSubtitle(raw: string): string {
-  return raw
-    .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
-    .replace(/[:\-–—].*$/, '')
-    .trim();
 }
 
 const DEFAULT_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
@@ -45,25 +33,13 @@ function buildProxiedUrl(targetUrl: string): string {
 export async function searchNettruyen(
   titles: string[]
 ): Promise<NetTruyenMatch | null> {
-  const cacheKey = `nettruyen:search:v5:${titles.join(':')}`;
+  const cacheKey = `nettruyen:search:v7:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
-    // Generate candidate search queries: both full title and title without subtitle
-    const candidateQueries: string[] = [];
-    for (const raw of titles) {
-      if (!raw) continue;
-      const full = cleanTitle(raw);
-      const stripped = stripSubtitle(raw);
-      if (full && full.length >= 2 && !candidateQueries.includes(full)) {
-        candidateQueries.push(full);
-      }
-      if (stripped && stripped !== full && stripped.length >= 2 && !candidateQueries.includes(stripped)) {
-        candidateQueries.push(stripped);
-      }
-    }
+    const queries = generateSearchQueries(titles, 'vi');
 
-    const queriesToTest = candidateQueries.slice(0, 3);
+    for (const q of queries.slice(0, 8)) {
+      if (!q || q.length < 2) continue;
 
-    for (const q of queriesToTest) {
       for (const mirror of MIRROR_URLS) {
         try {
           const searchUrl = buildProxiedUrl(`${mirror}/tim-truyen?keyword=${encodeURIComponent(q)}`);
@@ -74,7 +50,7 @@ export async function searchNettruyen(
               Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
               'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
             },
-            signal: AbortSignal.timeout(3500),
+            signal: AbortSignal.timeout(4500),
           });
 
           if (!res.ok) continue;
@@ -86,13 +62,10 @@ export async function searchNettruyen(
             /<a[^>]+href=["'](?:https?:\/\/[^"']+)?\/truyen-tranh\/([a-z0-9-]+)(?:-(\d+))?["'][^>]*>([\s\S]*?)<\/a>/gi;
           let match: RegExpExecArray | null;
 
-          const lowerQ = q.toLowerCase();
-          let firstCandidate: NetTruyenMatch | null = null;
-
           while ((match = regex.exec(html)) !== null) {
             const rawSlug = match[1];
             const explicitId = match[2];
-            const innerText = match[3].replace(/<[^>]*>/g, '').trim();
+            const innerText = match[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
             // Avoid chapter sublinks, category pages, or navigation tags
             if (
@@ -108,24 +81,14 @@ export async function searchNettruyen(
               continue;
             }
 
-            const candidate: NetTruyenMatch = {
-              comicSlug: rawSlug,
-              comicId: explicitId,
-              title: innerText,
-            };
-
-            if (!firstCandidate) {
-              firstCandidate = candidate;
+            const slugTitle = rawSlug.replace(/[^a-z0-9]/gi, ' ');
+            if (isTitleMatch(innerText, titles) || isTitleMatch(slugTitle, titles)) {
+              return {
+                comicSlug: rawSlug,
+                comicId: explicitId,
+                title: innerText,
+              };
             }
-
-            const lowerText = innerText.toLowerCase();
-            if (lowerText.includes(lowerQ) || lowerQ.includes(lowerText)) {
-              return candidate;
-            }
-          }
-
-          if (firstCandidate) {
-            return firstCandidate;
           }
         } catch (err) {
           console.error(`NetTruyen search error for "${q}" on ${mirror}:`, err);

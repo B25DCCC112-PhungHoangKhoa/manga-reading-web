@@ -1,5 +1,6 @@
 import { getOrSetCache } from '../cache';
 import { MangaDexChapter, ChapterPagesResponse } from '../types';
+import { isTitleMatch, generateSearchQueries } from './matcher';
 
 const BASE_URL = 'https://weebcentral.com';
 const FIREFOX_UA =
@@ -119,12 +120,12 @@ async function fetchWeebcentral(url: string, referer: string): Promise<Response>
  * Search WeebCentral for a manga by title
  */
 export async function searchWeebcentral(titles: string[]): Promise<string | null> {
-  const cacheKey = `weebcentral:search:v3:${titles.join(':')}`;
+  const cacheKey = `weebcentral:search:v4:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
-    for (const title of titles) {
-      if (!title) continue;
-      const q = cleanTitle(title);
-      if (!q) continue;
+    const queries = generateSearchQueries(titles, 'en');
+
+    for (const q of queries.slice(0, 5)) {
+      if (!q || q.length < 2) continue;
 
       try {
         const url = `${BASE_URL}/search/data?text=${encodeURIComponent(
@@ -134,38 +135,27 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
         const res = await fetchWeebcentral(url, `${BASE_URL}/search`);
 
         if (!res.ok) {
-          console.error(`WeebCentral search error for "${title}": HTTP ${res.status}`);
+          console.error(`WeebCentral search error for "${q}": HTTP ${res.status}`);
           continue;
         }
 
         const html = await res.text();
 
-        // Pattern 1: Match /series/ID/slug links
+        // Pattern: Match /series/ID/slug links
         const regex = /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)(\/[^"']*)?["'][^>]*>([\s\S]*?)<\/a>/gi;
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(html)) !== null) {
           const id = match[1];
           const slug = (match[2] || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
-          const innerText = match[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          const innerText = match[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-          if (
-            innerText.includes(q) ||
-            q.includes(innerText) ||
-            slug.includes(q) ||
-            q.includes(slug.trim())
-          ) {
+          if (isTitleMatch(innerText, titles) || isTitleMatch(slug, titles)) {
             return id;
           }
         }
-
-        // Pattern 2: Fallback to the first series link in results
-        const fallbackMatch = /href=["'](?:https:\/\/weebcentral\.com)?\/series\/([A-Z0-9]+)/i.exec(html);
-        if (fallbackMatch?.[1]) {
-          return fallbackMatch[1];
-        }
       } catch (err) {
-        console.error(`WeebCentral search error for "${title}":`, err);
+        console.error(`WeebCentral search error for "${q}":`, err);
       }
     }
     return null;

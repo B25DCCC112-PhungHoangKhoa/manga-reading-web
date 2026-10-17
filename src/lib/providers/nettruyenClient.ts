@@ -1,21 +1,11 @@
 import { MangaDexChapter } from '../types';
+import { isTitleMatch, generateSearchQueries } from './matcher';
 
 const PROXY_URL = 'https://manga-proxy.phungvanquangdmx.workers.dev';
 const BASE_URL = 'https://nettruyen.gg';
 
 function buildUrl(target: string): string {
   return `${PROXY_URL}/?url=${encodeURIComponent(target)}`;
-}
-
-function cleanTitle(raw: string): string {
-  return raw.replace(/[【】\[\]\(\)\"\'«»]/g, ' ').trim();
-}
-
-function stripSubtitle(raw: string): string {
-  return raw
-    .replace(/[【】\[\]\(\)\"\'«»]/g, ' ')
-    .replace(/[:\-–—].*$/, '')
-    .trim();
 }
 
 /**
@@ -26,28 +16,19 @@ export async function fetchNetTruyenClientSide(
   titles: string[]
 ): Promise<MangaDexChapter[]> {
   try {
-    const candidateQueries: string[] = [];
-    for (const raw of titles) {
-      if (!raw) continue;
-      const full = cleanTitle(raw);
-      const stripped = stripSubtitle(raw);
-      if (full && full.length >= 2 && !candidateQueries.includes(full)) {
-        candidateQueries.push(full);
-      }
-      if (stripped && stripped !== full && stripped.length >= 2 && !candidateQueries.includes(stripped)) {
-        candidateQueries.push(stripped);
-      }
-    }
+    const candidateQueries = generateSearchQueries(titles, 'vi');
 
     let matchedSlug: string | null = null;
     let matchedComicId: string | null = null;
 
     // 1. Search NetTruyen
-    for (const q of candidateQueries.slice(0, 3)) {
+    for (const q of candidateQueries.slice(0, 8)) {
+      if (!q || q.length < 2) continue;
+
       try {
         const searchUrl = buildUrl(`${BASE_URL}/tim-truyen?keyword=${encodeURIComponent(q)}`);
         const res = await fetch(searchUrl, {
-          signal: AbortSignal.timeout(4000),
+          signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) continue;
 
@@ -55,12 +36,11 @@ export async function fetchNetTruyenClientSide(
         const regex =
           /<a[^>]+href=["'](?:https?:\/\/[^"']+)?\/truyen-tranh\/([a-z0-9-]+)(?:-(\d+))?["'][^>]*>([\s\S]*?)<\/a>/gi;
         let match: RegExpExecArray | null;
-        const lowerQ = q.toLowerCase();
 
         while ((match = regex.exec(html)) !== null) {
           const rawSlug = match[1];
           const explicitId = match[2];
-          const innerText = match[3].replace(/<[^>]*>/g, '').trim();
+          const innerText = match[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
           if (
             !innerText ||
@@ -75,13 +55,8 @@ export async function fetchNetTruyenClientSide(
             continue;
           }
 
-          if (!matchedSlug) {
-            matchedSlug = rawSlug;
-            if (explicitId) matchedComicId = explicitId;
-          }
-
-          const lowerText = innerText.toLowerCase();
-          if (lowerText.includes(lowerQ) || lowerQ.includes(lowerText)) {
+          const slugTitle = rawSlug.replace(/[^a-z0-9]/gi, ' ');
+          if (isTitleMatch(innerText, titles) || isTitleMatch(slugTitle, titles)) {
             matchedSlug = rawSlug;
             if (explicitId) matchedComicId = explicitId;
             break;

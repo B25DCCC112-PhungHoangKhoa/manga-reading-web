@@ -335,14 +335,14 @@ export default function ChapterReader({
           if (mangaRes.ok) {
             const mangaJson = await mangaRes.json();
             const mangaObj = mangaJson.data?.manga;
-            if (mangaObj) {
-              allTitles = [
-                mangaObj.title?.english,
-                mangaObj.title?.romaji,
-                mangaObj.title?.native,
-                ...(mangaObj.synonyms || []),
+            allTitles =
+              mangaJson.data?.allTitles ||
+              [
+                mangaObj?.title?.english,
+                mangaObj?.title?.romaji,
+                mangaObj?.title?.native,
+                ...(mangaObj?.synonyms || []),
               ].filter(Boolean);
-            }
           }
           if (allTitles.length > 0) {
             const clientChapters = await fetchWeebcentralClientSide(allTitles);
@@ -463,14 +463,16 @@ export default function ChapterReader({
             if (mangaRes.ok) {
               const mangaJson = await mangaRes.json();
               const mangaObj = mangaJson.data?.manga;
-              if (mangaObj) {
-                const allTitles = [
-                  mangaObj.title?.english,
-                  mangaObj.title?.romaji,
-                  mangaObj.title?.native,
-                  ...(mangaObj.synonyms || []),
+              const allTitles =
+                mangaJson.data?.allTitles ||
+                [
+                  mangaObj?.title?.english,
+                  mangaObj?.title?.romaji,
+                  mangaObj?.title?.native,
+                  ...(mangaObj?.synonyms || []),
                 ].filter(Boolean);
 
+              if (allTitles.length > 0) {
                 const clientChapters = await fetchNetTruyenClientSide(allTitles);
                 if (clientChapters && clientChapters.length > 0) {
                   targetChapters = clientChapters;
@@ -502,14 +504,16 @@ export default function ChapterReader({
             if (mangaRes.ok) {
               const mangaJson = await mangaRes.json();
               const mangaObj = mangaJson.data?.manga;
-              if (mangaObj) {
-                const allTitles = [
-                  mangaObj.title?.english,
-                  mangaObj.title?.romaji,
-                  mangaObj.title?.native,
-                  ...(mangaObj.synonyms || []),
+              const allTitles =
+                mangaJson.data?.allTitles ||
+                [
+                  mangaObj?.title?.english,
+                  mangaObj?.title?.romaji,
+                  mangaObj?.title?.native,
+                  ...(mangaObj?.synonyms || []),
                 ].filter(Boolean);
 
+              if (allTitles.length > 0) {
                 const clientChapters = await fetchWeebcentralClientSide(allTitles);
                 if (clientChapters && clientChapters.length > 0) {
                   targetChapters = clientChapters;
@@ -532,15 +536,8 @@ export default function ChapterReader({
 
       if (targetChapters.length === 0) {
         setFeedbackMessage(
-          `No chapters found on ${targetProviderObj?.name || targetProviderId}. Opening manga page...`
+          `This manga is not available on ${targetProviderObj?.name || targetProviderId}`
         );
-        setTimeout(() => {
-          router.push(
-            effectiveMangaId
-              ? `/manga/${effectiveMangaId}?provider=${targetProviderId}`
-              : '/'
-          );
-        }, 1200);
         return;
       }
 

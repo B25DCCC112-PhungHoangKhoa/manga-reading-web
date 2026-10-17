@@ -8,6 +8,7 @@ import {
   resolveMangaDexId,
   getMangaEditions,
   getCompleteChaptersAcrossProviders,
+  getMangaDexAltTitles,
 } from '@/lib/mangadex';
 import ChapterList from '@/components/ChapterList';
 
@@ -52,7 +53,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
     '/placeholder.png';
 
   // Resolve MangaDex chapters & companion editions
-  const titles = [
+  let titles = [
     manga.title.english,
     manga.title.romaji,
     manga.title.native,
@@ -72,6 +73,12 @@ export default async function MangaDetailPage({ params }: PageProps) {
 
     mangadexId = resolvedId;
     editions = foundEditions;
+
+    // Enrich titles with MangaDex official alternative titles (improves NetTruyen/WeebCentral/MangaPill accuracy)
+    if (mangadexId) {
+      const mdAlt = await getMangaDexAltTitles(mangadexId);
+      titles = Array.from(new Set([...titles, ...mdAlt]));
+    }
 
     // Fast initial load: Fetch chapters from MangaDex (default provider)
     if (mangadexId) {

@@ -1,27 +1,21 @@
 import { getOrSetCache } from '../cache';
 import { MangaDexChapter, ChapterPagesResponse } from '../types';
+import { isTitleMatch, generateSearchQueries } from './matcher';
 
 const BASE_URL = 'https://mangapill.com';
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-function cleanTitle(raw: string): string {
-  return raw
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .toLowerCase();
-}
-
 /**
  * Search MangaPill for a manga by title
  */
 export async function searchMangaPill(titles: string[]): Promise<string | null> {
-  const cacheKey = `mangapill:search:${titles.join(':')}`;
+  const cacheKey = `mangapill:search:v3:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
-    for (const title of titles) {
-      if (!title) continue;
-      const q = cleanTitle(title);
-      if (!q) continue;
+    const queries = generateSearchQueries(titles, 'en');
+
+    for (const q of queries.slice(0, 5)) {
+      if (!q || q.length < 2) continue;
 
       try {
         const url = `${BASE_URL}/search?q=${encodeURIComponent(q)}`;
@@ -31,6 +25,7 @@ export async function searchMangaPill(titles: string[]): Promise<string | null> 
             Referer: BASE_URL,
             Accept: 'text/html,application/xhtml+xml',
           },
+          signal: AbortSignal.timeout(8000),
         });
 
         if (!res.ok) continue;
@@ -38,25 +33,20 @@ export async function searchMangaPill(titles: string[]): Promise<string | null> 
         const html = await res.text();
 
         // Pattern: <a href="/manga/2/one-piece" ...> ... <div ... font-semibold ...>One Piece</div>
-        const regex = /href=["']\/manga\/(\d+\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        const regex = /href=["']\/manga\/(\d+\/([^"']+))["'][^>]*>([\s\S]*?)<\/a>/gi;
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(html)) !== null) {
           const mangaPath = match[1];
-          const innerText = match[2].replace(/<[^>]*>/g, '').trim().toLowerCase();
+          const slug = (match[2] || '').replace(/[^a-z0-9]/gi, ' ');
+          const innerText = match[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-          if (innerText.includes(q) || q.includes(innerText)) {
+          if (isTitleMatch(innerText, titles) || isTitleMatch(slug, titles)) {
             return mangaPath;
           }
         }
-
-        // Fallback: pick the first matched /manga/id/slug link
-        const fallbackMatch = /href=["']\/manga\/(\d+\/[^"']+)["']/i.exec(html);
-        if (fallbackMatch?.[1]) {
-          return fallbackMatch[1];
-        }
       } catch (err) {
-        console.error(`MangaPill search error for "${title}":`, err);
+        console.error(`MangaPill search error for query "${q}":`, err);
       }
     }
     return null;
