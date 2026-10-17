@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { MangaDexChapter, MangaEdition } from '@/lib/types';
 import { fetchNetTruyenClientSide } from '@/lib/providers/nettruyenClient';
+import { fetchWeebcentralClientSide } from '@/lib/providers/weebcentralClient';
 
 interface ChapterListProps {
   chapters: MangaDexChapter[];
@@ -76,7 +77,27 @@ export default function ChapterList({
         }
       });
     }
-  }, [initialChapters, initialProvider, mangaTitle, mangaTitles]);
+
+    // If WeebCentral was selected initially but has no real WeebCentral chapters
+    if (
+      initialProvider === 'weebcentral' &&
+      !initialChapters.some((c) => c.id.startsWith('weebcentral-'))
+    ) {
+      const allCandidateTitles = Array.from(
+        new Set([mangaTitle, ...(mangaTitles || [])])
+      ).filter(Boolean);
+      fetchWeebcentralClientSide(allCandidateTitles).then((clientChapters) => {
+        if (clientChapters && clientChapters.length > 0) {
+          setChapters(clientChapters);
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem(`weebcentral_chapters_${mangaId}`, JSON.stringify(clientChapters));
+            } catch {}
+          }
+        }
+      });
+    }
+  }, [initialChapters, initialProvider, mangaTitle, mangaTitles, mangaId]);
 
   // Handle switching provider / edition / server
   const handleEditionChange = async (val: string) => {
@@ -125,6 +146,30 @@ export default function ChapterList({
             }
           } catch (clientErr) {
             console.warn('Client-side NetTruyen fetch failed:', clientErr);
+          }
+        }
+      }
+
+      // If server-side returned 0 chapters or fallback chapters for WeebCentral,
+      // seamlessly execute client-side browser fetch via user's residential connection
+      if (val === 'weebcentral') {
+        const hasRealWeebcentral = loadedChapters.some((c) => c.id.startsWith('weebcentral-'));
+        if (!hasRealWeebcentral || loadedChapters.length === 0) {
+          try {
+            const allCandidateTitles = Array.from(
+              new Set([mangaTitle, ...(mangaTitles || [])])
+            ).filter(Boolean);
+            const clientChapters = await fetchWeebcentralClientSide(allCandidateTitles);
+            if (clientChapters && clientChapters.length > 0) {
+              loadedChapters = clientChapters;
+              if (typeof window !== 'undefined') {
+                try {
+                  sessionStorage.setItem(`weebcentral_chapters_${mangaId}`, JSON.stringify(clientChapters));
+                } catch {}
+              }
+            }
+          } catch (clientErr) {
+            console.warn('Client-side WeebCentral fetch failed:', clientErr);
           }
         }
       }

@@ -29,6 +29,10 @@ import {
   fetchNetTruyenChaptersForComicClient,
   fetchNetTruyenClientSide,
 } from '@/lib/providers/nettruyenClient';
+import {
+  fetchWeebcentralChapterPagesClient,
+  fetchWeebcentralClientSide,
+} from '@/lib/providers/weebcentralClient';
 
 const PROVIDERS_LIST = [
   { id: 'mangadex', name: 'MangaDex', badge: 'EN', icon: '🌐' },
@@ -109,13 +113,15 @@ export default function ChapterReader({
 }: ChapterReaderProps) {
   const router = useRouter();
   const isNetTruyen = initialData.chapterId.startsWith('nettruyen-');
+  const isWeebCentral = initialData.chapterId.startsWith('weebcentral-');
+  const hasClientFallback = isNetTruyen || isWeebCentral;
   const [pages, setPages] = useState(initialData.pages || []);
   const [isUnavailable, setIsUnavailable] = useState(
-    Boolean(initialData.isUnavailable && !isNetTruyen)
+    Boolean(initialData.isUnavailable && !hasClientFallback)
   );
   const [isLoadingPages, setIsLoadingPages] = useState(
     (initialData.isUnavailable || (!initialData.pages || initialData.pages.length === 0)) &&
-      isNetTruyen
+      hasClientFallback
   );
   const [readingMode, setReadingMode] = useState<'vertical' | 'single'>('vertical');
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -182,6 +188,7 @@ export default function ChapterReader({
   // Reset page state on chapter change
   useEffect(() => {
     const isNetTruyenChapter = initialData.chapterId.startsWith('nettruyen-');
+    const isWeebCentralChapter = initialData.chapterId.startsWith('weebcentral-');
     const hasInitialPages = Boolean(initialData.pages && initialData.pages.length > 0);
 
     setPages(initialData.pages || []);
@@ -207,6 +214,24 @@ export default function ChapterReader({
         .finally(() => {
           setIsLoadingPages(false);
         });
+    } else if (!hasInitialPages && isWeebCentralChapter) {
+      setIsLoadingPages(true);
+      fetchWeebcentralChapterPagesClient(initialData.chapterId)
+        .then((clientPages) => {
+          if (clientPages && clientPages.length > 0) {
+            setPages(clientPages);
+            setIsUnavailable(false);
+          } else {
+            setIsUnavailable(true);
+          }
+        })
+        .catch((err) => {
+          console.error('Client fallback failed for WeebCentral chapter:', err);
+          setIsUnavailable(true);
+        })
+        .finally(() => {
+          setIsLoadingPages(false);
+        });
     } else {
       setIsUnavailable(Boolean(initialData.isUnavailable && !hasInitialPages));
       setIsLoadingPages(false);
@@ -224,17 +249,33 @@ export default function ChapterReader({
       const [comicSlug] = cleanId.split('__');
 
       // 1. Fast check from client sessionStorage
-      if (typeof window !== 'undefined' && comicSlug) {
+      if (typeof window !== 'undefined') {
         try {
-          const cached = sessionStorage.getItem(`nettruyen_chapters_${comicSlug}`);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              const computed = computeNavigation(parsed, initialData.chapterId);
-              if (!isCancelled) {
-                setNavData(computed);
-                setIsLoadingNav(false);
-                return;
+          if (comicSlug) {
+            const cached = sessionStorage.getItem(`nettruyen_chapters_${comicSlug}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const computed = computeNavigation(parsed, initialData.chapterId);
+                if (!isCancelled) {
+                  setNavData(computed);
+                  setIsLoadingNav(false);
+                  return;
+                }
+              }
+            }
+          }
+          if (mangaId) {
+            const cachedWc = sessionStorage.getItem(`weebcentral_chapters_${mangaId}`);
+            if (cachedWc) {
+              const parsed = JSON.parse(cachedWc);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const computed = computeNavigation(parsed, initialData.chapterId);
+                if (!isCancelled) {
+                  setNavData(computed);
+                  setIsLoadingNav(false);
+                  return;
+                }
               }
             }
           }
@@ -282,6 +323,41 @@ export default function ChapterReader({
           }
         } catch (clientErr) {
           console.error('Client navigation fallback failed:', clientErr);
+        }
+      }
+
+      // 4. Client-side WeebCentral fallback on Vercel (bypasses AWS Lambda IP block)
+      const isWeebCentralChapter = initialData.chapterId.startsWith('weebcentral-');
+      if (isWeebCentralChapter && mangaId && !isCancelled) {
+        try {
+          let allTitles: string[] = [];
+          const mangaRes = await fetch(`/api/manga/${mangaId}`);
+          if (mangaRes.ok) {
+            const mangaJson = await mangaRes.json();
+            const mangaObj = mangaJson.data?.manga;
+            if (mangaObj) {
+              allTitles = [
+                mangaObj.title?.english,
+                mangaObj.title?.romaji,
+                mangaObj.title?.native,
+                ...(mangaObj.synonyms || []),
+              ].filter(Boolean);
+            }
+          }
+          if (allTitles.length > 0) {
+            const clientChapters = await fetchWeebcentralClientSide(allTitles);
+            if (clientChapters && clientChapters.length > 0 && !isCancelled) {
+              const computed = computeNavigation(clientChapters, initialData.chapterId);
+              setNavData(computed);
+              if (typeof window !== 'undefined') {
+                try {
+                  sessionStorage.setItem(`weebcentral_chapters_${mangaId}`, JSON.stringify(clientChapters));
+                } catch {}
+              }
+            }
+          }
+        } catch (clientErr) {
+          console.error('Client WeebCentral navigation fallback failed:', clientErr);
         }
       }
 
@@ -333,14 +409,26 @@ export default function ChapterReader({
     try {
       let targetChapters: SimpleChapter[] = [];
 
-      // 1. If switching to NetTruyen, check client sessionStorage cache
-      if (targetProviderId === 'nettruyen' && typeof window !== 'undefined') {
-        const isNetTruyenChapter = initialData.chapterId.startsWith('nettruyen-');
-        const cleanId = isNetTruyenChapter ? initialData.chapterId.replace(/^nettruyen-/, '') : '';
-        const [comicSlug] = cleanId.split('__');
-        if (comicSlug) {
+      // 1. If switching to NetTruyen or WeebCentral, check client sessionStorage cache
+      if (typeof window !== 'undefined') {
+        if (targetProviderId === 'nettruyen') {
+          const isNetTruyenChapter = initialData.chapterId.startsWith('nettruyen-');
+          const cleanId = isNetTruyenChapter ? initialData.chapterId.replace(/^nettruyen-/, '') : '';
+          const [comicSlug] = cleanId.split('__');
+          if (comicSlug) {
+            try {
+              const cached = sessionStorage.getItem(`nettruyen_chapters_${comicSlug}`);
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  targetChapters = parsed;
+                }
+              }
+            } catch {}
+          }
+        } else if (targetProviderId === 'weebcentral' && effectiveMangaId) {
           try {
-            const cached = sessionStorage.getItem(`nettruyen_chapters_${comicSlug}`);
+            const cached = sessionStorage.getItem(`weebcentral_chapters_${effectiveMangaId}`);
             if (cached) {
               const parsed = JSON.parse(cached);
               if (Array.isArray(parsed) && parsed.length > 0) {
@@ -399,6 +487,45 @@ export default function ChapterReader({
             }
           } catch (e) {
             console.error('Client-side NetTruyen resolution failed:', e);
+          }
+        }
+      }
+
+      // 3b. Client-side fallback for WeebCentral on Vercel
+      if (
+        targetProviderId === 'weebcentral' &&
+        (!targetChapters.length || !targetChapters.some((c) => c.id.startsWith('weebcentral-')))
+      ) {
+        if (effectiveMangaId) {
+          try {
+            const mangaRes = await fetch(`/api/manga/${effectiveMangaId}`);
+            if (mangaRes.ok) {
+              const mangaJson = await mangaRes.json();
+              const mangaObj = mangaJson.data?.manga;
+              if (mangaObj) {
+                const allTitles = [
+                  mangaObj.title?.english,
+                  mangaObj.title?.romaji,
+                  mangaObj.title?.native,
+                  ...(mangaObj.synonyms || []),
+                ].filter(Boolean);
+
+                const clientChapters = await fetchWeebcentralClientSide(allTitles);
+                if (clientChapters && clientChapters.length > 0) {
+                  targetChapters = clientChapters;
+                  if (typeof window !== 'undefined') {
+                    try {
+                      sessionStorage.setItem(
+                        `weebcentral_chapters_${effectiveMangaId}`,
+                        JSON.stringify(clientChapters)
+                      );
+                    } catch {}
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Client-side WeebCentral resolution failed:', e);
           }
         }
       }
