@@ -26,7 +26,7 @@ function cleanTitle(raw: string): string {
 export async function searchNettruyen(
   titles: string[]
 ): Promise<NetTruyenMatch | null> {
-  const cacheKey = `nettruyen:search:v2:${titles.join(':')}`;
+  const cacheKey = `nettruyen:search:v4:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
     for (const rawTitle of titles) {
       if (!rawTitle) continue;

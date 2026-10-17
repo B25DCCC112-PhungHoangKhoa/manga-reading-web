@@ -56,6 +56,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
     manga.title.english,
     manga.title.romaji,
     manga.title.native,
+    ...(manga.synonyms || []),
   ].filter(Boolean) as string[];
 
   let chapters: Awaited<ReturnType<typeof getCompleteChaptersAcrossProviders>> = [];

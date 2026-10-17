@@ -44,6 +44,7 @@ export async function GET(
         manga.title.english,
         manga.title.romaji,
         manga.title.native,
+        ...(manga.synonyms || []),
       ].filter(Boolean) as string[];
 
       // Check if explicit edition/mangadexId requested

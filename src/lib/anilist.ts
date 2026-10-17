@@ -21,6 +21,7 @@ const MEDIA_FIELDS = `
   bannerImage
   description(asHtml: false)
   genres
+  synonyms
   tags {
     id
     name

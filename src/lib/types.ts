@@ -25,6 +25,7 @@ export interface AniListManga {
   bannerImage?: string | null;
   description?: string | null;
   genres: string[];
+  synonyms?: string[];
   tags?: MangaTag[];
   averageScore?: number | null;
   popularity?: number | null;
