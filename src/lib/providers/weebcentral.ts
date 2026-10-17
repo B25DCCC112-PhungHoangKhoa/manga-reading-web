@@ -36,6 +36,13 @@ function cleanTitle(raw: string): string {
     .toLowerCase();
 }
 
+function buildProxiedUrl(targetUrl: string): string {
+  const proxy = process.env.CLOUDFLARE_PROXY_URL || process.env.PROXY_URL;
+  if (!proxy) return targetUrl;
+  const separator = proxy.includes('?') ? '&' : '?';
+  return `${proxy}${separator}url=${encodeURIComponent(targetUrl)}`;
+}
+
 /**
  * Search WeebCentral for a manga by title
  */
@@ -52,7 +59,7 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
           q
         )}&limit=10&offset=0&sort=Best+Match&order=Descending&official=Any&anime=Any&adult=Any&display_mode=Full+Display`;
 
-        const res = await fetch(url, {
+        const res = await fetch(buildProxiedUrl(url), {
           headers: HTMX_HEADERS(`${BASE_URL}/search`),
         });
 
@@ -105,7 +112,7 @@ export async function getWeebcentralChapters(
   return getOrSetCache(cacheKey, 1800, async () => {
     try {
       const url = `${BASE_URL}/series/${mangaId}/full-chapter-list`;
-      const res = await fetch(url, {
+      const res = await fetch(buildProxiedUrl(url), {
         headers: HTMX_HEADERS(`${BASE_URL}/series/${mangaId}`),
       });
 
@@ -195,7 +202,9 @@ export async function getWeebcentralChapterPages(
   return getOrSetCache(cacheKey, 3600, async () => {
     try {
       let html = '';
-      const url = `${BASE_URL}/chapters/${cleanId}/images?is_prev=False&current_page=1&reading_style=long_strip`;
+      const url = buildProxiedUrl(
+        `${BASE_URL}/chapters/${cleanId}/images?is_prev=False&current_page=1&reading_style=long_strip`
+      );
       const res = await fetch(url, {
         headers: HTMX_HEADERS(`${BASE_URL}/chapters/${cleanId}`),
       });
@@ -204,7 +213,7 @@ export async function getWeebcentralChapterPages(
         html = await res.text();
       } else {
         // Fallback: try direct chapter reader page
-        const fallbackRes = await fetch(`${BASE_URL}/chapters/${cleanId}`, {
+        const fallbackRes = await fetch(buildProxiedUrl(`${BASE_URL}/chapters/${cleanId}`), {
           headers: HTMX_HEADERS(`${BASE_URL}/`),
         });
         if (fallbackRes.ok) {

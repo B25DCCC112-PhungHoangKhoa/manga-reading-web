@@ -20,6 +20,13 @@ function cleanTitle(raw: string): string {
     .trim();
 }
 
+function buildProxiedUrl(targetUrl: string): string {
+  const proxy = process.env.CLOUDFLARE_PROXY_URL || process.env.PROXY_URL;
+  if (!proxy) return targetUrl;
+  const separator = proxy.includes('?') ? '&' : '?';
+  return `${proxy}${separator}url=${encodeURIComponent(targetUrl)}`;
+}
+
 /**
  * Searches NetTruyen for a manga matching any of the given titles.
  */
@@ -35,7 +42,7 @@ export async function searchNettruyen(
 
       for (const mirror of MIRROR_URLS) {
         try {
-          const searchUrl = `${mirror}/tim-truyen?keyword=${encodeURIComponent(q)}`;
+          const searchUrl = buildProxiedUrl(`${mirror}/tim-truyen?keyword=${encodeURIComponent(q)}`);
           const res = await fetch(searchUrl, {
             headers: {
               'User-Agent': USER_AGENT,
@@ -120,7 +127,7 @@ export async function getNettruyenChapters(
     // 1. If comicId is not yet known, fetch manga page to extract comicId from JavaScript gOpts
     if (!resolvedId) {
       try {
-        const pageRes = await fetch(`${BASE_URL}/truyen-tranh/${comicSlug}`, {
+        const pageRes = await fetch(buildProxiedUrl(`${BASE_URL}/truyen-tranh/${comicSlug}`), {
           headers: {
             'User-Agent': USER_AGENT,
             Referer: `${BASE_URL}/`,
@@ -143,9 +150,11 @@ export async function getNettruyenChapters(
     if (resolvedId) {
       for (const mirror of MIRROR_URLS) {
         try {
-          const ajaxUrl = `${mirror}/Comic/Services/ComicService.asmx/ChapterList?slug=${encodeURIComponent(
-            comicSlug
-          )}&comicId=${encodeURIComponent(resolvedId)}`;
+          const ajaxUrl = buildProxiedUrl(
+            `${mirror}/Comic/Services/ComicService.asmx/ChapterList?slug=${encodeURIComponent(
+              comicSlug
+            )}&comicId=${encodeURIComponent(resolvedId)}`
+          );
 
           const ajaxRes = await fetch(ajaxUrl, {
             headers: {
@@ -210,7 +219,7 @@ export async function getNettruyenChapters(
 
     // 3. Fallback: Parse HTML chapter list
     try {
-      const pageUrl = `${BASE_URL}/truyen-tranh/${comicSlug}`;
+      const pageUrl = buildProxiedUrl(`${BASE_URL}/truyen-tranh/${comicSlug}`);
       const pageRes = await fetch(pageUrl, {
         headers: {
           'User-Agent': USER_AGENT,
@@ -284,7 +293,8 @@ export async function getNettruyenChapterPages(
 
   const cacheKey = `nettruyen:pages:v2:${comicSlug}:${chapterSlug}`;
   return getOrSetCache(cacheKey, 3600, async () => {
-    const chapterUrl = `${BASE_URL}/truyen-tranh/${comicSlug}/${chapterSlug}`;
+    const rawChapterUrl = `${BASE_URL}/truyen-tranh/${comicSlug}/${chapterSlug}`;
+    const chapterUrl = buildProxiedUrl(rawChapterUrl);
 
     const res = await fetch(chapterUrl, {
       headers: {
