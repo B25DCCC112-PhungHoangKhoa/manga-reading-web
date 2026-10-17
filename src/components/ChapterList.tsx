@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { MangaDexChapter, MangaEdition } from '@/lib/types';
+import { fetchNetTruyenClientSide } from '@/lib/providers/nettruyenClient';
 
 interface ChapterListProps {
   chapters: MangaDexChapter[];
@@ -66,12 +67,29 @@ export default function ChapterList({
         url += `?mangadexId=${val}`;
       }
       const res = await fetch(url);
+      let loadedChapters: MangaDexChapter[] = [];
+
       if (res.ok) {
         const json = await res.json();
-        if (json.success) {
-          setChapters(json.data || []);
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          loadedChapters = json.data;
         }
       }
+
+      // If server-side returned 0 chapters for NetTruyen (e.g. Vercel datacenter blocked by Cloudflare),
+      // seamlessly execute client-side browser fetch via user's residential connection
+      if (val === 'nettruyen' && loadedChapters.length === 0) {
+        try {
+          const clientChapters = await fetchNetTruyenClientSide([mangaTitle]);
+          if (clientChapters && clientChapters.length > 0) {
+            loadedChapters = clientChapters;
+          }
+        } catch (clientErr) {
+          console.warn('Client-side NetTruyen fetch failed:', clientErr);
+        }
+      }
+
+      setChapters(loadedChapters);
     } catch (err) {
       console.error('Failed to switch provider/edition:', err);
     } finally {

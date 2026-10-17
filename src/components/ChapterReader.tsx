@@ -20,6 +20,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ChapterPagesResponse } from '@/lib/types';
+import { fetchNetTruyenChapterPagesClient } from '@/lib/providers/nettruyenClient';
 
 interface SimpleChapter {
   id: string;
@@ -72,6 +73,18 @@ export default function ChapterReader({
     setCurrentPageIndex(0);
     setLoadedPages({});
     window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Client-side fallback for NetTruyen if server returned 0 pages
+    if (
+      (!initialData.pages || initialData.pages.length === 0) &&
+      initialData.chapterId.startsWith('nettruyen-')
+    ) {
+      fetchNetTruyenChapterPagesClient(initialData.chapterId).then((clientPages) => {
+        if (clientPages && clientPages.length > 0) {
+          setPages(clientPages);
+        }
+      });
+    }
   }, [initialData.chapterId, initialData.pages]);
 
   // Load chapter navigation list & siblings
