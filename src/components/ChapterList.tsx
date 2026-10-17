@@ -212,8 +212,8 @@ export default function ChapterList({
           >
             <option value="mangadex">MangaDex (Default)</option>
             <option value="mangapill">MangaPill (Recommended)</option>
-            <option value="nettruyen">🇻🇳 NetTruyen (Tiếng Việt)</option>
-            <option value="weebcentral">WeebCentral (Dev / Local)</option>
+            <option value="nettruyen">🇻🇳 NetTruyen (Local / Dev)</option>
+            <option value="weebcentral">WeebCentral (Local / Dev)</option>
             <option value="all">⚡ All Providers (Merged)</option>
             {editions.map((ed) => (
               <option key={ed.id} value={ed.id}>
@@ -296,14 +296,18 @@ export default function ChapterList({
             <div>
               <h4 className="text-base font-bold text-zinc-200">
                 {selectedEditionId === 'weebcentral'
-                  ? 'WeebCentral chapters unavailable'
+                  ? 'WeebCentral unavailable on cloud host'
+                  : selectedEditionId === 'nettruyen'
+                  ? 'NetTruyen is blocked by Cloudflare on Vercel'
                   : selectedEditionId === 'mangadex'
                   ? 'No chapters currently available on MangaDex'
                   : 'No chapters found for this provider'}
               </h4>
               <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
                 {selectedEditionId === 'weebcentral'
-                  ? 'WeebCentral is protected by Cloudflare and may block cloud hosting IPs in production. Switch to MangaPill (which has 1,100+ chapters) or MangaDex to read this manga!'
+                  ? 'WeebCentral is protected by Cloudflare and blocks datacenter IPs in production. Switch to MangaPill (which has 1,100+ chapters) or MangaDex to read this manga!'
+                  : selectedEditionId === 'nettruyen'
+                  ? 'NetTruyen blocks cloud hosting datacenters (AWS / Vercel). NetTruyen works when running locally (localhost), but on Vercel production please switch to MangaPill or MangaDex!'
                   : selectedEditionId === 'mangadex'
                   ? 'MangaDex does not host chapters for this series. Try switching to MangaPill or WeebCentral to read this manga!'
                   : 'Try selecting a different provider from the dropdown to check for available chapters.'}
