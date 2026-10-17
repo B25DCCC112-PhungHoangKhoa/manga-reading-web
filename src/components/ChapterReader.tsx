@@ -20,7 +20,10 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ChapterPagesResponse } from '@/lib/types';
-import { fetchNetTruyenChapterPagesClient } from '@/lib/providers/nettruyenClient';
+import {
+  fetchNetTruyenChapterPagesClient,
+  fetchNetTruyenChaptersForComicClient,
+} from '@/lib/providers/nettruyenClient';
 
 interface SimpleChapter {
   id: string;
@@ -35,6 +38,50 @@ interface NavData {
   prevChapter: SimpleChapter | null;
   nextChapter: SimpleChapter | null;
   currentIndex: number;
+}
+
+function computeNavigation(
+  chapters: SimpleChapter[],
+  targetChapterId: string
+): NavData {
+  let currentIndex = chapters.findIndex((c) => c.id === targetChapterId);
+
+  // Fallback: match by chapter number if id didn't match exactly
+  if (currentIndex === -1) {
+    const currentNumMatch =
+      targetChapterId.match(/(?:chuong|chapter)-(\d+(?:\.\d+)?)/i) ||
+      targetChapterId.match(/(\d+(?:\.\d+)?)$/);
+    if (currentNumMatch?.[1]) {
+      const targetNum = currentNumMatch[1];
+      currentIndex = chapters.findIndex(
+        (c) => c.chapter === targetNum || parseFloat(c.chapter || '-1') === parseFloat(targetNum)
+      );
+    }
+  }
+
+  let prevChapter: SimpleChapter | null = null;
+  let nextChapter: SimpleChapter | null = null;
+
+  if (chapters.length > 0 && currentIndex !== -1) {
+    const firstNum = parseFloat(chapters[0]?.chapter || '0');
+    const lastNum = parseFloat(chapters[chapters.length - 1]?.chapter || '0');
+    const isDescending = firstNum >= lastNum;
+
+    nextChapter = isDescending
+      ? (currentIndex > 0 ? chapters[currentIndex - 1] : null)
+      : (currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null);
+
+    prevChapter = isDescending
+      ? (currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null)
+      : (currentIndex > 0 ? chapters[currentIndex - 1] : null);
+  }
+
+  return {
+    chapters,
+    prevChapter,
+    nextChapter,
+    currentIndex,
+  };
 }
 
 interface ChapterReaderProps {
@@ -115,6 +162,29 @@ export default function ChapterReader({
 
     async function loadNavigation() {
       setIsLoadingNav(true);
+      const isNetTruyenChapter = initialData.chapterId.startsWith('nettruyen-');
+      const cleanId = isNetTruyenChapter ? initialData.chapterId.replace(/^nettruyen-/, '') : '';
+      const [comicSlug] = cleanId.split('__');
+
+      // 1. Fast check from client sessionStorage
+      if (typeof window !== 'undefined' && comicSlug) {
+        try {
+          const cached = sessionStorage.getItem(`nettruyen_chapters_${comicSlug}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const computed = computeNavigation(parsed, initialData.chapterId);
+              if (!isCancelled) {
+                setNavData(computed);
+                setIsLoadingNav(false);
+                return;
+              }
+            }
+          }
+        } catch {}
+      }
+
+      // 2. Fetch server-side navigation route
       try {
         const query = new URLSearchParams();
         if (mangaId) query.set('mangaId', mangaId);
@@ -125,20 +195,40 @@ export default function ChapterReader({
         );
         if (res.ok) {
           const json = await res.json();
-          if (json.success && !isCancelled) {
+          if (
+            json.success &&
+            Array.isArray(json.chapters) &&
+            json.chapters.length > 0 &&
+            !isCancelled
+          ) {
             setNavData({
-              chapters: json.chapters || [],
+              chapters: json.chapters,
               prevChapter: json.prevChapter,
               nextChapter: json.nextChapter,
               currentIndex: json.currentIndex,
             });
+            setIsLoadingNav(false);
+            return;
           }
         }
       } catch (err) {
-        console.error('Failed to load chapter navigation:', err);
-      } finally {
-        if (!isCancelled) setIsLoadingNav(false);
+        console.error('Failed to load chapter navigation from server:', err);
       }
+
+      // 3. Client-side NetTruyen fallback on Vercel (bypasses AWS Lambda IP block)
+      if (isNetTruyenChapter && comicSlug && !isCancelled) {
+        try {
+          const clientChapters = await fetchNetTruyenChaptersForComicClient(comicSlug);
+          if (clientChapters && clientChapters.length > 0 && !isCancelled) {
+            const computed = computeNavigation(clientChapters, initialData.chapterId);
+            setNavData(computed);
+          }
+        } catch (clientErr) {
+          console.error('Client navigation fallback failed:', clientErr);
+        }
+      }
+
+      if (!isCancelled) setIsLoadingNav(false);
     }
 
     loadNavigation();

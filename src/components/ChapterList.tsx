@@ -64,6 +64,15 @@ export default function ChapterList({
       fetchNetTruyenClientSide(allCandidateTitles).then((clientChapters) => {
         if (clientChapters && clientChapters.length > 0) {
           setChapters(clientChapters);
+          if (typeof window !== 'undefined') {
+            try {
+              const firstId = clientChapters[0]?.id;
+              const slugMatch = firstId?.match(/^nettruyen-([^_]+)__/);
+              if (slugMatch?.[1]) {
+                sessionStorage.setItem(`nettruyen_chapters_${slugMatch[1]}`, JSON.stringify(clientChapters));
+              }
+            } catch {}
+          }
         }
       });
     }
@@ -104,6 +113,15 @@ export default function ChapterList({
             const clientChapters = await fetchNetTruyenClientSide(allCandidateTitles);
             if (clientChapters && clientChapters.length > 0) {
               loadedChapters = clientChapters;
+              if (typeof window !== 'undefined') {
+                try {
+                  const firstId = clientChapters[0]?.id;
+                  const slugMatch = firstId?.match(/^nettruyen-([^_]+)__/);
+                  if (slugMatch?.[1]) {
+                    sessionStorage.setItem(`nettruyen_chapters_${slugMatch[1]}`, JSON.stringify(clientChapters));
+                  }
+                } catch {}
+              }
             }
           } catch (clientErr) {
             console.warn('Client-side NetTruyen fetch failed:', clientErr);
