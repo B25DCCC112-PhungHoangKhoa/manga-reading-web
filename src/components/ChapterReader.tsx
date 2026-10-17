@@ -18,12 +18,24 @@ import {
   Sparkles,
   ListFilter,
   CheckCircle2,
+  ChevronDown,
+  Check,
+  Loader2,
+  Globe,
 } from 'lucide-react';
 import { ChapterPagesResponse } from '@/lib/types';
 import {
   fetchNetTruyenChapterPagesClient,
   fetchNetTruyenChaptersForComicClient,
+  fetchNetTruyenClientSide,
 } from '@/lib/providers/nettruyenClient';
+
+const PROVIDERS_LIST = [
+  { id: 'mangadex', name: 'MangaDex', badge: 'EN', icon: '🌐' },
+  { id: 'weebcentral', name: 'WeebCentral', badge: 'EN', icon: '⚡' },
+  { id: 'mangapill', name: 'MangaPill', badge: 'EN', icon: '💊' },
+  { id: 'nettruyen', name: 'NetTruyen', badge: 'VI', icon: '🇻🇳' },
+] as const;
 
 interface SimpleChapter {
   id: string;
@@ -121,6 +133,51 @@ export default function ChapterReader({
   // Container refs
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Provider Switcher State
+  const currentProvider: 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' =
+    initialData.chapterId.startsWith('nettruyen-')
+      ? 'nettruyen'
+      : initialData.chapterId.startsWith('weebcentral-')
+      ? 'weebcentral'
+      : initialData.chapterId.startsWith('mangapill-')
+      ? 'mangapill'
+      : (provider as 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen') || 'mangadex';
+
+  const currentProviderMeta =
+    PROVIDERS_LIST.find((p) => p.id === currentProvider) || PROVIDERS_LIST[0];
+
+  const [showProviderMenu, setShowProviderMenu] = useState(false);
+  const [isSwitchingProvider, setIsSwitchingProvider] = useState(false);
+  const [switchingTargetId, setSwitchingTargetId] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const providerDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close provider dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        providerDropdownRef.current &&
+        !providerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowProviderMenu(false);
+      }
+    }
+    if (showProviderMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showProviderMenu]);
+
+  // Auto clear feedback message
+  useEffect(() => {
+    if (feedbackMessage) {
+      const timer = setTimeout(() => setFeedbackMessage(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [feedbackMessage]);
 
   // Reset page state on chapter change
   useEffect(() => {
@@ -247,6 +304,269 @@ export default function ChapterReader({
       router.push(url);
     },
     [mangaId, provider, router]
+  );
+
+  // Switch provider and jump to equivalent chapter
+  const handleSwitchProvider = async (targetProviderId: string) => {
+    if (targetProviderId === currentProvider) {
+      setShowProviderMenu(false);
+      return;
+    }
+
+    setIsSwitchingProvider(true);
+    setSwitchingTargetId(targetProviderId);
+    setShowProviderMenu(false);
+
+    const currentChapterNum =
+      initialData.chapterNumber ||
+      initialData.chapterId.match(/(?:chuong|chapter)-(\d+(?:\.\d+)?)/i)?.[1] ||
+      initialData.chapterId.match(/(\d+(?:\.\d+)?)$/)?.[1] ||
+      '1';
+
+    const targetProviderObj = PROVIDERS_LIST.find((p) => p.id === targetProviderId);
+    setFeedbackMessage(
+      `Finding Chapter ${currentChapterNum} on ${targetProviderObj?.name || targetProviderId}...`
+    );
+
+    const effectiveMangaId = mangaId || initialData.mangaId;
+
+    try {
+      let targetChapters: SimpleChapter[] = [];
+
+      // 1. If switching to NetTruyen, check client sessionStorage cache
+      if (targetProviderId === 'nettruyen' && typeof window !== 'undefined') {
+        const isNetTruyenChapter = initialData.chapterId.startsWith('nettruyen-');
+        const cleanId = isNetTruyenChapter ? initialData.chapterId.replace(/^nettruyen-/, '') : '';
+        const [comicSlug] = cleanId.split('__');
+        if (comicSlug) {
+          try {
+            const cached = sessionStorage.getItem(`nettruyen_chapters_${comicSlug}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                targetChapters = parsed;
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // 2. Fetch target provider chapters from server route
+      if (targetChapters.length === 0 && effectiveMangaId) {
+        const res = await fetch(
+          `/api/manga/${effectiveMangaId}/chapters?provider=${targetProviderId}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            targetChapters = json.data;
+          }
+        }
+      }
+
+      // 3. Client-side fallback for NetTruyen on Vercel
+      if (
+        targetProviderId === 'nettruyen' &&
+        (!targetChapters.length || !targetChapters.some((c) => c.id.startsWith('nettruyen-')))
+      ) {
+        if (effectiveMangaId) {
+          try {
+            const mangaRes = await fetch(`/api/manga/${effectiveMangaId}`);
+            if (mangaRes.ok) {
+              const mangaJson = await mangaRes.json();
+              const mangaObj = mangaJson.data?.manga;
+              if (mangaObj) {
+                const allTitles = [
+                  mangaObj.title?.english,
+                  mangaObj.title?.romaji,
+                  mangaObj.title?.native,
+                  ...(mangaObj.synonyms || []),
+                ].filter(Boolean);
+
+                const clientChapters = await fetchNetTruyenClientSide(allTitles);
+                if (clientChapters && clientChapters.length > 0) {
+                  targetChapters = clientChapters;
+                  const firstId = clientChapters[0]?.id;
+                  const slugMatch = firstId?.match(/^nettruyen-([^_]+)__/);
+                  if (slugMatch?.[1] && typeof window !== 'undefined') {
+                    sessionStorage.setItem(
+                      `nettruyen_chapters_${slugMatch[1]}`,
+                      JSON.stringify(clientChapters)
+                    );
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Client-side NetTruyen resolution failed:', e);
+          }
+        }
+      }
+
+      if (targetChapters.length === 0) {
+        setFeedbackMessage(
+          `No chapters found on ${targetProviderObj?.name || targetProviderId}. Opening manga page...`
+        );
+        setTimeout(() => {
+          router.push(
+            effectiveMangaId
+              ? `/manga/${effectiveMangaId}?provider=${targetProviderId}`
+              : '/'
+          );
+        }, 1200);
+        return;
+      }
+
+      // 4. Find matching chapter by number
+      const currentNumFloat = parseFloat(currentChapterNum);
+      let matchedChapter: SimpleChapter | undefined;
+
+      if (!isNaN(currentNumFloat)) {
+        matchedChapter = targetChapters.find((c) => {
+          if (!c.chapter) return false;
+          const cNum = parseFloat(c.chapter);
+          return !isNaN(cNum) && Math.abs(cNum - currentNumFloat) < 0.001;
+        });
+      }
+
+      if (!matchedChapter) {
+        matchedChapter = targetChapters.find((c) => c.chapter === currentChapterNum);
+      }
+
+      if (!matchedChapter && !isNaN(currentNumFloat)) {
+        matchedChapter = targetChapters.find((c) => {
+          const m =
+            c.id.match(/(?:chuong|chapter)-(\d+(?:\.\d+)?)/i) ||
+            c.id.match(/(\d+(?:\.\d+)?)$/);
+          return m?.[1] && parseFloat(m[1]) === currentNumFloat;
+        });
+      }
+
+      // Nearest chapter fallback
+      if (!matchedChapter && !isNaN(currentNumFloat) && targetChapters.length > 0) {
+        let closest = targetChapters[0];
+        let minDiff = Infinity;
+        for (const ch of targetChapters) {
+          const n = parseFloat(ch.chapter || '');
+          if (!isNaN(n)) {
+            const diff = Math.abs(n - currentNumFloat);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closest = ch;
+            }
+          }
+        }
+        if (closest) {
+          matchedChapter = closest;
+          setFeedbackMessage(
+            `Chapter ${currentChapterNum} not found. Jumping to Ch. ${closest.chapter || ''}...`
+          );
+        }
+      }
+
+      const finalChapter = matchedChapter || targetChapters[0];
+      if (finalChapter) {
+        const query = new URLSearchParams();
+        if (effectiveMangaId) query.set('mangaId', String(effectiveMangaId));
+        query.set('provider', targetProviderId);
+        router.push(`/read/${finalChapter.id}?${query.toString()}`);
+      } else {
+        router.push(
+          effectiveMangaId
+            ? `/manga/${effectiveMangaId}?provider=${targetProviderId}`
+            : '/'
+        );
+      }
+    } catch (err) {
+      console.error('Error switching provider:', err);
+      setFeedbackMessage('Failed to switch provider. Redirecting...');
+      setTimeout(() => {
+        router.push(
+          effectiveMangaId
+            ? `/manga/${effectiveMangaId}?provider=${targetProviderId}`
+            : '/'
+        );
+      }, 1200);
+    } finally {
+      setIsSwitchingProvider(false);
+      setSwitchingTargetId(null);
+    }
+  };
+
+  // Provider Switcher Button and Dropdown
+  const renderProviderSwitcher = (align: 'right' | 'left' = 'right') => (
+    <div className="relative" ref={providerDropdownRef}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowProviderMenu((prev) => !prev);
+        }}
+        disabled={isSwitchingProvider}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold border border-zinc-800 transition-colors shadow-sm disabled:opacity-50"
+        title="Switch reading provider / source"
+        aria-label="Switch reading provider"
+      >
+        {isSwitchingProvider ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+        ) : (
+          <span className="text-sm leading-none">{currentProviderMeta.icon}</span>
+        )}
+        <span className="hidden sm:inline font-medium">{currentProviderMeta.name}</span>
+        <span className="text-[10px] px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 font-bold border border-zinc-700/50">
+          {currentProviderMeta.badge}
+        </span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${
+            showProviderMenu ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {showProviderMenu && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`absolute ${
+            align === 'right' ? 'right-0' : 'left-0'
+          } mt-2 w-56 rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 shadow-2xl p-1.5 z-50`}
+        >
+          <div className="px-2.5 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800/80 mb-1 flex items-center justify-between">
+            <span>Change Provider</span>
+            <Globe className="w-3 h-3 text-zinc-500" />
+          </div>
+          <div className="space-y-0.5">
+            {PROVIDERS_LIST.map((p) => {
+              const isCurrent = p.id === currentProvider;
+              const isTargetLoading = isSwitchingProvider && switchingTargetId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => handleSwitchProvider(p.id)}
+                  disabled={isSwitchingProvider}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-colors ${
+                    isCurrent
+                      ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/20'
+                      : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{p.icon}</span>
+                    <span className="font-medium">{p.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-bold border border-zinc-700/50">
+                      {p.badge}
+                    </span>
+                  </div>
+                  {isTargetLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                  ) : isCurrent ? (
+                    <Check className="w-4 h-4 text-indigo-400" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 
   // 1. SMART IMAGE PRELOADING (loading the next 3 pages ahead into memory)
@@ -434,12 +754,15 @@ export default function ChapterReader({
             </div>
           </div>
 
-          <Link
-            href={mangaId ? `/manga/${mangaId}` : '/'}
-            className="text-xs text-zinc-400 hover:text-white transition-colors"
-          >
-            Back to Chapters
-          </Link>
+          <div className="flex items-center gap-2">
+            {renderProviderSwitcher('right')}
+            <Link
+              href={mangaId ? `/manga/${mangaId}` : '/'}
+              className="text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              Back to Chapters
+            </Link>
+          </div>
         </header>
 
         {/* Official Publisher Content Notice & Direct Reader Launch */}
@@ -482,6 +805,27 @@ export default function ChapterReader({
               </button>
             )}
 
+            {/* Alternative In-App Providers */}
+            <div className="pt-3 border-t border-zinc-800/80 text-left space-y-2">
+              <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider text-center">
+                Or switch provider to read in-app:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {PROVIDERS_LIST.filter((p) => p.id !== currentProvider).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSwitchProvider(p.id)}
+                    disabled={isSwitchingProvider}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors disabled:opacity-50"
+                  >
+                    <span>{p.icon}</span>
+                    <span>{p.name}</span>
+                    <span className="text-[9px] text-zinc-400 font-bold">[{p.badge}]</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
               className="px-4 py-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs font-semibold border border-zinc-700 transition-colors"
@@ -490,6 +834,13 @@ export default function ChapterReader({
             </Link>
           </div>
         </div>
+
+        {feedbackMessage && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900/95 border border-indigo-500/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            <span>{feedbackMessage}</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -577,12 +928,15 @@ export default function ChapterReader({
             </div>
           )}
 
-          <Link
-            href={mangaId ? `/manga/${mangaId}` : '/'}
-            className="text-xs text-zinc-400 hover:text-white transition-colors"
-          >
-            Back to Chapters
-          </Link>
+          <div className="flex items-center gap-2">
+            {renderProviderSwitcher('right')}
+            <Link
+              href={mangaId ? `/manga/${mangaId}` : '/'}
+              className="text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              Back to Chapters
+            </Link>
+          </div>
         </header>
 
         <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-2xl text-center space-y-5 mt-14 backdrop-blur-md">
@@ -613,6 +967,27 @@ export default function ChapterReader({
               </button>
             )}
 
+            {/* Alternative Provider Quick Switches */}
+            <div className="pt-3 border-t border-zinc-800/80 text-left space-y-2">
+              <p className="text-xs text-zinc-400 text-center">
+                Try switching to another provider for this chapter:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {PROVIDERS_LIST.filter((p) => p.id !== currentProvider).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSwitchProvider(p.id)}
+                    disabled={isSwitchingProvider}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors disabled:opacity-50"
+                  >
+                    <span>{p.icon}</span>
+                    <span>{p.name}</span>
+                    <span className="text-[9px] text-zinc-400 font-bold">[{p.badge}]</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
               className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-all border border-zinc-700"
@@ -621,6 +996,13 @@ export default function ChapterReader({
             </Link>
           </div>
         </div>
+
+        {feedbackMessage && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900/95 border border-indigo-500/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            <span>{feedbackMessage}</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -723,6 +1105,9 @@ export default function ChapterReader({
 
           {/* Reader Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Provider Switcher Dropdown */}
+            {renderProviderSwitcher('right')}
+
             {/* Reading Mode Switcher */}
             <div className="flex items-center rounded-xl bg-zinc-900 border border-zinc-800 p-0.5">
               <button
@@ -1063,6 +1448,14 @@ export default function ChapterReader({
           </button>
         </div>
       </footer>
+
+      {/* Toast Feedback for Provider Switch */}
+      {feedbackMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900/95 border border-indigo-500/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          <span>{feedbackMessage}</span>
+        </div>
+      )}
     </div>
   );
 }
