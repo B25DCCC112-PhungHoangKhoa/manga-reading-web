@@ -21,7 +21,7 @@ export {
 };
 
 const MANGADEX_API = 'https://api.mangadex.org';
-const USER_AGENT = 'MangaWeb/1.0 (https://github.com/mangaweb)';
+const USER_AGENT = 'MangaWeb/1.0 (https://github.com/B25DCCC112-PhungHoangKhoa/manga-reading-web)';
 
 interface MangaDexApiResponse<T> {
   result: string;
@@ -323,15 +323,24 @@ export async function filterAvailableManga(
 ): Promise<AniListManga[]> {
   if (!list || list.length === 0) return [];
 
-  const checks = await Promise.all(
-    list.map(async (m) => {
-      const titles = [m.title.english, m.title.romaji, m.title.native].filter(Boolean) as string[];
-      const available = await isMangaAvailable(m.id, titles);
-      return available ? m : null;
-    })
-  );
+  try {
+    const checks = await Promise.all(
+      list.map(async (m) => {
+        try {
+          const titles = [m.title.english, m.title.romaji, m.title.native].filter(Boolean) as string[];
+          const available = await isMangaAvailable(m.id, titles);
+          return available ? m : null;
+        } catch {
+          return m;
+        }
+      })
+    );
 
-  return checks.filter(Boolean) as AniListManga[];
+    const filtered = checks.filter(Boolean) as AniListManga[];
+    return filtered.length > 0 ? filtered : list;
+  } catch {
+    return list;
+  }
 }
 
 /**

@@ -83,6 +83,11 @@ export interface PageInfo {
   hasNextPage: boolean;
 }
 
+export interface PaginatedMangaResponse {
+  media: AniListManga[];
+  pageInfo: PageInfo;
+}
+
 export interface AnimeFilterOptions {
   search?: string;
   type?: 'ANIME' | 'MANGA';

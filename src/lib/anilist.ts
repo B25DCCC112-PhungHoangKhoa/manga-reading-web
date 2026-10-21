@@ -1,4 +1,4 @@
-import { AniListManga, AniListMedia, AnimeFilterOptions, PageInfo } from './types';
+import { AniListManga, AniListMedia, AnimeFilterOptions, PageInfo, PaginatedMangaResponse } from './types';
 import { getOrSetCache } from './cache';
 
 const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
@@ -101,49 +101,95 @@ async function executeAniListQuery<T>(query: string, variables: Record<string, u
 }
 
 /**
- * Fetch trending manga list (cached for 10 minutes)
+ * Fetch trending manga list with pagination info (cached for 10 minutes)
  */
-export async function getTrendingManga(page = 1, perPage = 12): Promise<AniListManga[]> {
-  const cacheKey = `anilist:trending:${page}:${perPage}`;
+export async function getTrendingMangaWithPagination(
+  page = 1,
+  perPage = 18
+): Promise<PaginatedMangaResponse> {
+  const cacheKey = `anilist:trending:v3:${page}:${perPage}`;
   return getOrSetCache(cacheKey, 600, async () => {
     const query = `
       query ($page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {
+          pageInfo {
+            total
+            perPage
+            currentPage
+            lastPage
+            hasNextPage
+          }
           media(type: MANGA, sort: [TRENDING_DESC, POPULARITY_DESC]) {
             ${MEDIA_FIELDS}
           }
         }
       }
     `;
-    const data = await executeAniListQuery<{ Page: { media: AniListManga[] } }>(query, {
+    const data = await executeAniListQuery<{
+      Page: { media: AniListManga[]; pageInfo: PageInfo };
+    }>(query, {
       page,
       perPage,
     });
-    return data.Page.media;
+    return {
+      media: data.Page.media,
+      pageInfo: data.Page.pageInfo,
+    };
   });
 }
 
 /**
- * Fetch latest updated / popular manga (cached for 10 minutes)
+ * Fetch trending manga list (cached for 10 minutes)
  */
-export async function getLatestManga(page = 1, perPage = 12): Promise<AniListManga[]> {
-  const cacheKey = `anilist:latest:${page}:${perPage}`;
+export async function getTrendingManga(page = 1, perPage = 18): Promise<AniListManga[]> {
+  const res = await getTrendingMangaWithPagination(page, perPage);
+  return res.media;
+}
+
+/**
+ * Fetch latest updated / popular manga with pagination info (cached for 10 minutes)
+ */
+export async function getLatestMangaWithPagination(
+  page = 1,
+  perPage = 18
+): Promise<PaginatedMangaResponse> {
+  const cacheKey = `anilist:latest:v3:${page}:${perPage}`;
   return getOrSetCache(cacheKey, 600, async () => {
     const query = `
       query ($page: Int, $perPage: Int) {
         Page(page: $page, perPage: $perPage) {
+          pageInfo {
+            total
+            perPage
+            currentPage
+            lastPage
+            hasNextPage
+          }
           media(type: MANGA, sort: [UPDATED_AT_DESC, POPULARITY_DESC]) {
             ${MEDIA_FIELDS}
           }
         }
       }
     `;
-    const data = await executeAniListQuery<{ Page: { media: AniListManga[] } }>(query, {
+    const data = await executeAniListQuery<{
+      Page: { media: AniListManga[]; pageInfo: PageInfo };
+    }>(query, {
       page,
       perPage,
     });
-    return data.Page.media;
+    return {
+      media: data.Page.media,
+      pageInfo: data.Page.pageInfo,
+    };
   });
+}
+
+/**
+ * Fetch latest updated / popular manga (cached for 10 minutes)
+ */
+export async function getLatestManga(page = 1, perPage = 18): Promise<AniListManga[]> {
+  const res = await getLatestMangaWithPagination(page, perPage);
+  return res.media;
 }
 
 /**
