@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLatestMangaWithPagination } from '@/lib/anilist';
 
-import { filterAvailableManga } from '@/lib/mangadex';
-
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
@@ -12,11 +10,9 @@ export async function GET(request: NextRequest) {
     const perPage = Math.min(parseInt(searchParams.get('perPage') || '18', 10), 50);
 
     const { media, pageInfo } = await getLatestMangaWithPagination(page, perPage);
-    const data = await filterAvailableManga(media);
-    return NextResponse.json({ success: true, data, pageInfo });
+    return NextResponse.json({ success: true, data: media, pageInfo });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
-

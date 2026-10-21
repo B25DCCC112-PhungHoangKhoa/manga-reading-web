@@ -3,9 +3,7 @@ import HeroCarousel from '@/components/HeroCarousel';
 import MangaGrid from '@/components/MangaGrid';
 import { getTrendingMangaWithPagination, getLatestMangaWithPagination } from '@/lib/anilist';
 import { Flame, Sparkles } from 'lucide-react';
-
 import { AniListManga, PageInfo } from '@/lib/types';
-import { filterAvailableManga } from '@/lib/mangadex';
 
 export const revalidate = 600; // ISR cache for 10 minutes
 
@@ -21,15 +19,10 @@ export default async function HomePage() {
       getLatestMangaWithPagination(1, 18),
     ]);
 
-    const [filteredTrending, filteredLatest] = await Promise.all([
-      filterAvailableManga(trendingRes.media),
-      filterAvailableManga(latestRes.media),
-    ]);
-
-    trendingManga = filteredTrending.length > 0 ? filteredTrending : trendingRes.media;
+    trendingManga = trendingRes.media;
     trendingPageInfo = trendingRes.pageInfo;
 
-    latestManga = filteredLatest.length > 0 ? filteredLatest : latestRes.media;
+    latestManga = latestRes.media;
     latestPageInfo = latestRes.pageInfo;
   } catch (err) {
     console.error('Failed to fetch home page manga:', err);
