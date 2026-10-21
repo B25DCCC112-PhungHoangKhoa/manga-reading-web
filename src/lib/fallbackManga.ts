@@ -58,7 +58,7 @@ async function searchComickHid(titles: string[]): Promise<string | null> {
       if (!clean) continue;
 
       try {
-        const url = `https://api.comick.fun/v1.0/search?q=${encodeURIComponent(clean)}&limit=5`;
+        const url = `https://api.comick.dev/v1.0/search?q=${encodeURIComponent(clean)}&limit=5`;
         const res = await fetch(url, {
           headers: { 'User-Agent': USER_AGENT },
         });
@@ -94,7 +94,7 @@ async function fetchComickChapters(hid: string): Promise<MangaDexChapter[]> {
   const cacheKey = `comick:chapters:${hid}`;
   return getOrSetCache(cacheKey, 1800, async () => {
     try {
-      const url = `https://api.comick.fun/comic/${hid}/chapters?lang=en&limit=1500`;
+      const url = `https://api.comick.dev/comic/${hid}/chapters?lang=en&limit=1500`;
       const res = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT },
       });
@@ -197,7 +197,7 @@ export async function getAlternativeChapterPages(
     const cleanHid = chapterId.replace(/^comick-/, '');
 
     try {
-      const url = `https://api.comick.fun/chapter/${cleanHid}`;
+      const url = `https://api.comick.dev/chapter/${cleanHid}`;
       const res = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT },
       });

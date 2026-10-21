@@ -17,6 +17,7 @@ const ALLOWED_HOST_SUFFIXES = [
   'comick.fun',
   'comick.cc',
   'comick.io',
+  'comick.dev',
   'comick.app',
   'compsci88.com',
   'lowee.us',

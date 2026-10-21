@@ -132,6 +132,19 @@ export async function getCompleteChaptersAcrossProviders(
     masterChapters = comickMerged.chapters;
   }
 
+  // 4. Fallback to NetTruyen if chapters are still empty
+  if (masterChapters.length === 0) {
+    try {
+      const match = await searchNettruyen(titles);
+      if (match) {
+        const ntChapters = await getNettruyenChapters(match.comicSlug, match.comicId);
+        if (ntChapters && ntChapters.length > 0) {
+          masterChapters = ntChapters;
+        }
+      }
+    } catch {}
+  }
+
   // 4. Sort numerically descending
   masterChapters.sort((a, b) => {
     const numA = parseFloat(a.chapter || '-1');

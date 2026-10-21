@@ -10,11 +10,11 @@ export default function NotFound() {
       </div>
 
       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">
-        Title Unavailable
+        Page Not Found
       </h1>
 
       <p className="max-w-md text-sm sm:text-base text-zinc-400 mb-8 leading-relaxed">
-        This manga currently has no readable chapters or is unavailable on MangaDex. We only display titles with active scanlations.
+        The page you are looking for does not exist or has been moved.
       </p>
 
       <Link
@@ -27,4 +27,3 @@ export default function NotFound() {
     </div>
   );
 }
-

@@ -403,19 +403,21 @@ export default function ChapterList({
                 {selectedEditionId === 'weebcentral'
                   ? 'WeebCentral unavailable on cloud host'
                   : selectedEditionId === 'nettruyen'
-                  ? 'NetTruyen is blocked by Cloudflare on Vercel'
+                  ? 'No chapters found on NetTruyen'
                   : selectedEditionId === 'mangadex'
                   ? 'No chapters currently available on MangaDex'
-                  : 'No chapters found for this provider'}
+                  : selectedEditionId === 'mangapill'
+                  ? 'No chapters found on MangaPill'
+                  : 'No chapters currently available'}
               </h4>
               <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
                 {selectedEditionId === 'weebcentral'
-                  ? 'WeebCentral is protected by Cloudflare and blocks datacenter IPs in production. Switch to MangaPill (which has 1,100+ chapters) or MangaDex to read this manga!'
+                  ? 'WeebCentral is protected by Cloudflare and blocks datacenter IPs in production. Switch to MangaPill or MangaDex to read this manga!'
                   : selectedEditionId === 'nettruyen'
-                  ? 'NetTruyen blocks cloud hosting datacenters (AWS / Vercel). NetTruyen works when running locally (localhost), but on Vercel production please switch to MangaPill or MangaDex!'
+                  ? 'NetTruyen does not currently have chapters for this title or is blocked by Cloudflare on cloud hosting.'
                   : selectedEditionId === 'mangadex'
-                  ? 'MangaDex does not host chapters for this series. Try switching to MangaPill or WeebCentral to read this manga!'
-                  : 'Try selecting a different provider from the dropdown to check for available chapters.'}
+                  ? 'MangaDex does not host chapters for this series. Try switching to MangaPill or NetTruyen to read this manga!'
+                  : 'Scanlation chapters have not been released yet for this title across connected providers. Try selecting a provider above or check back later!'}
               </p>
             </div>
 
