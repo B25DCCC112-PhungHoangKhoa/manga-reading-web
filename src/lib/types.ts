@@ -102,6 +102,7 @@ export interface AnimeFilterOptions {
   ageRating?: string;
   source?: string[];
   episodes?: string;
+  chapters?: string;
   sort?: string;
   page?: number;
   perPage?: number;

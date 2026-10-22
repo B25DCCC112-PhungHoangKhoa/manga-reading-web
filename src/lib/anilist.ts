@@ -289,7 +289,7 @@ export async function filterAnimeOrMedia(
 ): Promise<{ media: AniListMedia[]; pageInfo: PageInfo }> {
   const page = options.page || 1;
   const perPage = options.perPage || 24;
-  const type = options.type || 'ANIME';
+  const type = options.type || 'MANGA';
 
   const variables: Record<string, unknown> = {
     page,
@@ -302,7 +302,7 @@ export async function filterAnimeOrMedia(
     variables.search = options.search.trim();
   }
 
-  // Genres (OR logic across selected genres) & Tags (e.g. Isekai)
+  // Genres & Tags
   if (options.genres && options.genres.length > 0) {
     const regularGenres = options.genres.filter(
       (g) => g.toLowerCase() !== 'isekai'
@@ -312,6 +312,10 @@ export async function filterAnimeOrMedia(
     }
     if (options.genres.some((g) => g.toLowerCase() === 'isekai')) {
       variables.tag_in = ['Isekai'];
+    }
+    // If Hentai is among selected genres, enable adult content so AniList returns it
+    if (options.genres.some((g) => g.toLowerCase() === 'hentai')) {
+      variables.isAdult = true;
     }
   }
 
@@ -383,6 +387,27 @@ export async function filterAnimeOrMedia(
     }
   }
 
+  // Chapters count range for Manga: 1-20, 21-50, 51-100, 100+
+  if (options.chapters && options.chapters !== 'ALL') {
+    switch (options.chapters) {
+      case '1-20':
+        variables.chapters_greater = 0;
+        variables.chapters_lesser = 21;
+        break;
+      case '21-50':
+        variables.chapters_greater = 20;
+        variables.chapters_lesser = 51;
+        break;
+      case '51-100':
+        variables.chapters_greater = 50;
+        variables.chapters_lesser = 101;
+        break;
+      case '100+':
+        variables.chapters_greater = 99;
+        break;
+    }
+  }
+
   // Deterministic sorting with secondary sort key
   switch (options.sort) {
     case 'SCORE_DESC':
@@ -426,6 +451,8 @@ export async function filterAnimeOrMedia(
         $source_in: [MediaSource],
         $episodes_greater: Int,
         $episodes_lesser: Int,
+        $chapters_greater: Int,
+        $chapters_lesser: Int,
         $isAdult: Boolean,
         $sort: [MediaSort]
       ) {
@@ -452,6 +479,8 @@ export async function filterAnimeOrMedia(
             source_in: $source_in,
             episodes_greater: $episodes_greater,
             episodes_lesser: $episodes_lesser,
+            chapters_greater: $chapters_greater,
+            chapters_lesser: $chapters_lesser,
             isAdult: $isAdult,
             sort: $sort
           ) {

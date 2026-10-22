@@ -21,8 +21,8 @@ export default function ActiveFilterChips({
     chips.push({ label: `Search: "${filters.search}"`, key: 'search' });
   }
 
-  if (filters.type && filters.type !== 'ANIME') {
-    chips.push({ label: `Type: ${filters.type}`, key: 'type' });
+  if (filters.type && filters.type !== 'MANGA') {
+    chips.push({ label: `Type: ${filters.type === 'ANIME' ? 'Anime' : filters.type}`, key: 'type' });
   }
 
   if (filters.genres && filters.genres.length > 0) {
@@ -33,18 +33,38 @@ export default function ActiveFilterChips({
 
   if (filters.format && filters.format.length > 0) {
     filters.format.forEach((fmt) => {
-      chips.push({ label: `Format: ${fmt}`, key: 'format', value: fmt });
+      const formatLabels: Record<string, string> = {
+        MANGA: 'Manga',
+        NOVEL: 'Light Novel',
+        ONE_SHOT: 'One-shot',
+        TV: 'TV Series',
+        MOVIE: 'Movie',
+        OVA: 'OVA',
+        ONA: 'ONA',
+        SPECIAL: 'Special',
+        MUSIC: 'Music',
+      };
+      chips.push({ label: `Format: ${formatLabels[fmt] || fmt}`, key: 'format', value: fmt });
     });
   }
 
   if (filters.status && filters.status !== 'ALL') {
-    const statusLabels: Record<string, string> = {
-      RELEASING: 'Currently Airing',
-      FINISHED: 'Finished Airing',
-      NOT_YET_RELEASED: 'Not Yet Aired',
-      CANCELLED: 'Cancelled',
-      HIATUS: 'On Hiatus',
-    };
+    const isManga = filters.type === 'MANGA' || !filters.type;
+    const statusLabels: Record<string, string> = isManga
+      ? {
+          RELEASING: 'Ongoing',
+          FINISHED: 'Completed',
+          NOT_YET_RELEASED: 'Upcoming',
+          CANCELLED: 'Cancelled',
+          HIATUS: 'On Hiatus',
+        }
+      : {
+          RELEASING: 'Currently Airing',
+          FINISHED: 'Finished Airing',
+          NOT_YET_RELEASED: 'Not Yet Aired',
+          CANCELLED: 'Cancelled',
+          HIATUS: 'On Hiatus',
+        };
     chips.push({
       label: `Status: ${statusLabels[filters.status] || filters.status}`,
       key: 'status',
@@ -95,6 +115,10 @@ export default function ActiveFilterChips({
 
   if (filters.episodes && filters.episodes !== 'ALL') {
     chips.push({ label: `Episodes: ${filters.episodes}`, key: 'episodes' });
+  }
+
+  if (filters.chapters && filters.chapters !== 'ALL') {
+    chips.push({ label: `Chapters: ${filters.chapters}`, key: 'chapters' });
   }
 
   if (chips.length === 0) return null;

@@ -266,12 +266,13 @@ export default async function MangaDetailPage({ params }: PageProps) {
             {manga.genres && manga.genres.length > 0 && (
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 pt-1">
                 {manga.genres.map((genre) => (
-                  <span
+                  <Link
                     key={genre}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 font-medium"
+                    href={`/browse?type=MANGA&genres=${encodeURIComponent(genre)}`}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 hover:text-indigo-300 hover:border-indigo-500/40 border border-zinc-800 text-zinc-300 font-medium transition-colors"
                   >
                     {genre}
-                  </span>
+                  </Link>
                 ))}
               </div>
             )}

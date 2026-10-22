@@ -27,7 +27,7 @@ function BrowseContent() {
   const getFiltersFromUrl = useCallback((): AnimeFilterOptions => {
     return {
       search: searchParams.get('q') || searchParams.get('search') || undefined,
-      type: (searchParams.get('type') as 'ANIME' | 'MANGA') || 'ANIME',
+      type: (searchParams.get('type') as 'ANIME' | 'MANGA') || 'MANGA',
       genres: searchParams.get('genres')
         ? searchParams.get('genres')!.split(',').filter(Boolean)
         : undefined,
@@ -55,6 +55,7 @@ function BrowseContent() {
         ? searchParams.get('source')!.split(',').filter(Boolean)
         : undefined,
       episodes: searchParams.get('episodes') || undefined,
+      chapters: searchParams.get('chapters') || undefined,
       sort: searchParams.get('sort') || 'POPULARITY_DESC',
       page: parseInt(searchParams.get('page') || '1', 10),
       perPage: 24,
@@ -88,7 +89,7 @@ function BrowseContent() {
       const params = new URLSearchParams();
 
       if (newFilters.search) params.set('q', newFilters.search);
-      if (newFilters.type && newFilters.type !== 'ANIME')
+      if (newFilters.type && newFilters.type !== 'MANGA')
         params.set('type', newFilters.type);
       if (newFilters.genres && newFilters.genres.length > 0)
         params.set('genres', newFilters.genres.join(','));
@@ -109,6 +110,8 @@ function BrowseContent() {
         params.set('source', newFilters.source.join(','));
       if (newFilters.episodes && newFilters.episodes !== 'ALL')
         params.set('episodes', newFilters.episodes);
+      if (newFilters.chapters && newFilters.chapters !== 'ALL')
+        params.set('chapters', newFilters.chapters);
       if (newFilters.sort && newFilters.sort !== 'POPULARITY_DESC')
         params.set('sort', newFilters.sort);
       if (newFilters.page && newFilters.page > 1)
@@ -149,6 +152,8 @@ function BrowseContent() {
         params.set('source', activeFilters.source.join(','));
       if (activeFilters.episodes && activeFilters.episodes !== 'ALL')
         params.set('episodes', activeFilters.episodes);
+      if (activeFilters.chapters && activeFilters.chapters !== 'ALL')
+        params.set('chapters', activeFilters.chapters);
       if (activeFilters.sort) params.set('sort', activeFilters.sort);
       params.set('page', String(activeFilters.page || 1));
       params.set('perPage', '24');
@@ -249,7 +254,7 @@ function BrowseContent() {
   // Reset all filters
   const handleResetAll = () => {
     const defaultFilters: AnimeFilterOptions = {
-      type: 'ANIME',
+      type: 'MANGA',
       sort: 'POPULARITY_DESC',
       page: 1,
       perPage: 24,

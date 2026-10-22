@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     const options: AnimeFilterOptions = {
       search: searchParams.get('q') || searchParams.get('search') || undefined,
-      type: (searchParams.get('type') as 'ANIME' | 'MANGA') || 'ANIME',
+      type: (searchParams.get('type') as 'ANIME' | 'MANGA') || 'MANGA',
       genres: searchParams.get('genres')
         ? searchParams.get('genres')!.split(',').filter(Boolean)
         : undefined,
@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         ? searchParams.get('source')!.split(',').filter(Boolean)
         : undefined,
       episodes: searchParams.get('episodes') || undefined,
+      chapters: searchParams.get('chapters') || undefined,
       sort: searchParams.get('sort') || 'POPULARITY_DESC',
       page: parseInt(searchParams.get('page') || '1', 10),
       perPage: Math.min(

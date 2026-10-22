@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Star, Tv, Film, PlayCircle } from 'lucide-react';
+import { Star, Tv, Film, PlayCircle, BookOpen } from 'lucide-react';
 import { AniListMedia } from '@/lib/types';
 
 interface AnimeCardProps {
@@ -46,11 +46,12 @@ export default function AnimeCard({
   };
 
   const getStatusLabel = (st?: string | null) => {
+    const isManga = media.type === 'MANGA';
     switch (st) {
       case 'RELEASING':
-        return 'Airing';
+        return isManga ? 'Ongoing' : 'Airing';
       case 'FINISHED':
-        return 'Finished';
+        return isManga ? 'Completed' : 'Finished';
       case 'NOT_YET_RELEASED':
         return 'Upcoming';
       default:
@@ -89,12 +90,14 @@ export default function AnimeCard({
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
           {/* Format Badge */}
           <span className="px-2 py-0.5 rounded-md bg-zinc-950/85 backdrop-blur-md border border-zinc-700/60 text-[10px] font-bold uppercase tracking-wider text-zinc-300 shadow-xs flex items-center gap-1">
-            {format === 'MOVIE' ? (
+            {media.type === 'MANGA' || format === 'MANGA' || format === 'NOVEL' || format === 'ONE_SHOT' ? (
+              <BookOpen className="w-2.5 h-2.5 text-indigo-400" />
+            ) : format === 'MOVIE' ? (
               <Film className="w-2.5 h-2.5 text-indigo-400" />
             ) : (
               <Tv className="w-2.5 h-2.5 text-indigo-400" />
             )}
-            {format}
+            {format === 'NOVEL' ? 'LN' : format === 'ONE_SHOT' ? 'One Shot' : format}
           </span>
 
           {/* Score Badge */}
