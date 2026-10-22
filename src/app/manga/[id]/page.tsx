@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { Star, BookOpen, Calendar, Tag, ArrowLeft } from 'lucide-react';
+import { Star, BookOpen, Calendar, Tag, ArrowLeft, Loader2, Layers } from 'lucide-react';
 import { getMangaById } from '@/lib/anilist';
 import {
   resolveMangaDexId,
@@ -16,6 +16,112 @@ export const revalidate = 900; // Cache page for 15 minutes
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+function ChapterListSkeleton() {
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 sm:p-6 shadow-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-950/60 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-zinc-200">Chapters</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[11px] font-medium text-indigo-300">
+                <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+                Scanning providers...
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 mt-0.5">Fetching latest chapters across MangaDex, WeebCentral, and more</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-28 bg-zinc-800/70 rounded-xl animate-pulse" />
+          <div className="h-8 w-24 bg-zinc-800/70 rounded-xl animate-pulse" />
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2.5">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/60 animate-pulse"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-zinc-800/80" />
+              <div className="space-y-1.5">
+                <div className="h-4 w-36 sm:w-56 bg-zinc-800/80 rounded" />
+                <div className="h-3 w-20 sm:w-28 bg-zinc-800/40 rounded" />
+              </div>
+            </div>
+            <div className="h-7 w-20 bg-zinc-800/60 rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function ChaptersSection({
+  mangaId,
+  title,
+  initialTitles,
+}: {
+  mangaId: number;
+  title: string;
+  initialTitles: string[];
+}) {
+  let titles = [...initialTitles];
+  let chapters: Awaited<ReturnType<typeof getCompleteChaptersAcrossProviders>> = [];
+  let mangadexId: string | null = null;
+  let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
+  let initialProvider: 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' | 'all' = 'mangadex';
+
+  try {
+    const [resolvedId, foundEditions] = await Promise.all([
+      resolveMangaDexId(mangaId, titles),
+      getMangaEditions(mangaId, titles),
+    ]);
+
+    mangadexId = resolvedId;
+    editions = foundEditions;
+
+    // Enrich titles with MangaDex official alternative titles (improves NetTruyen/WeebCentral/MangaPill accuracy)
+    if (mangadexId) {
+      const mdAlt = await getMangaDexAltTitles(mangadexId);
+      titles = Array.from(new Set([...titles, ...mdAlt]));
+    }
+
+    // Fast initial load: Fetch chapters from MangaDex (default provider)
+    if (mangadexId) {
+      chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'mangadex');
+    }
+
+    // Fallback: If MangaDex has no chapters or no ID, check if alternative providers have chapters
+    if (chapters.length === 0) {
+      chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'all');
+      if (chapters.length > 0) {
+        initialProvider = 'all';
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching manga chapters across providers:', err);
+  }
+
+  return (
+    <ChapterList
+      chapters={chapters}
+      mangaId={mangaId}
+      mangaTitle={title}
+      mangaTitles={titles}
+      editions={editions}
+      initialMangaDexId={mangadexId || undefined}
+      initialProvider={initialProvider}
+    />
+  );
 }
 
 export default async function MangaDetailPage({ params }: PageProps) {
@@ -52,49 +158,12 @@ export default async function MangaDetailPage({ params }: PageProps) {
     manga.coverImage?.large ||
     '/placeholder.png';
 
-  // Resolve MangaDex chapters & companion editions
-  let titles = [
+  const titles = [
     manga.title.english,
     manga.title.romaji,
     manga.title.native,
     ...(manga.synonyms || []),
   ].filter(Boolean) as string[];
-
-  let chapters: Awaited<ReturnType<typeof getCompleteChaptersAcrossProviders>> = [];
-  let mangadexId: string | null = null;
-  let editions: Array<{ id: string; title: string; isColored?: boolean }> = [];
-  let initialProvider: 'mangadex' | 'weebcentral' | 'mangapill' | 'nettruyen' | 'all' = 'mangadex';
-
-  try {
-    const [resolvedId, foundEditions] = await Promise.all([
-      resolveMangaDexId(manga.id, titles),
-      getMangaEditions(manga.id, titles),
-    ]);
-
-    mangadexId = resolvedId;
-    editions = foundEditions;
-
-    // Enrich titles with MangaDex official alternative titles (improves NetTruyen/WeebCentral/MangaPill accuracy)
-    if (mangadexId) {
-      const mdAlt = await getMangaDexAltTitles(mangadexId);
-      titles = Array.from(new Set([...titles, ...mdAlt]));
-    }
-
-    // Fast initial load: Fetch chapters from MangaDex (default provider)
-    if (mangadexId) {
-      chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'mangadex');
-    }
-
-    // Fallback: If MangaDex has no chapters or no ID, check if alternative providers have chapters
-    if (chapters.length === 0) {
-      chapters = await getCompleteChaptersAcrossProviders(mangadexId, titles, 'all');
-      if (chapters.length > 0) {
-        initialProvider = 'all';
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching manga chapters across providers:', err);
-  }
 
   // Clean HTML from synopsis
   const cleanSynopsis = manga.description
@@ -241,15 +310,13 @@ export default async function MangaDetailPage({ params }: PageProps) {
 
         {/* Chapter Feed Section */}
         <div className="mt-12">
-          <ChapterList
-            chapters={chapters}
-            mangaId={manga.id}
-            mangaTitle={title}
-            mangaTitles={titles}
-            editions={editions}
-            initialMangaDexId={mangadexId || undefined}
-            initialProvider={initialProvider}
-          />
+          <Suspense fallback={<ChapterListSkeleton />}>
+            <ChaptersSection
+              mangaId={manga.id}
+              title={title}
+              initialTitles={titles}
+            />
+          </Suspense>
         </div>
       </div>
     </div>
