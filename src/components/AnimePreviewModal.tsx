@@ -83,11 +83,11 @@ export default function AnimePreviewModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[90vh] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-3xl max-h-[90vh] bg-brand-bg border border-brand-border rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Banner Backdrop */}
-        <div className="relative w-full h-44 sm:h-52 shrink-0 bg-zinc-900 overflow-hidden">
+        <div className="relative w-full h-44 sm:h-52 shrink-0 bg-brand-card overflow-hidden">
           {media.bannerImage ? (
             <Image
               src={media.bannerImage}
@@ -97,15 +97,15 @@ export default function AnimePreviewModal({
               className="object-cover object-center filter blur-xs brightness-75 scale-105"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-r from-violet-950/60 via-zinc-900 to-indigo-950/60" />
+            <div className="w-full h-full bg-gradient-to-r from-black via-zinc-900 to-brand-bg" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/50 to-transparent" />
 
           {/* Close Button */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center border border-zinc-700/60 backdrop-blur-md transition-colors"
+            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-brand-card text-zinc-300 hover:text-white flex items-center justify-center border border-brand-border backdrop-blur-md transition-colors"
             aria-label="Close modal"
           >
             <X className="w-4 h-4" />
@@ -117,7 +117,7 @@ export default function AnimePreviewModal({
           {/* Main Info Row */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
             {/* Poster Cover */}
-            <div className="relative w-28 sm:w-36 aspect-[3/4] shrink-0 rounded-xl overflow-hidden bg-zinc-800 border-2 border-zinc-800 shadow-2xl">
+            <div className="relative w-28 sm:w-36 aspect-[3/4] shrink-0 rounded-xl overflow-hidden bg-brand-card border-2 border-brand-border shadow-2xl">
               <Image
                 src={coverUrl}
                 alt={title}
@@ -131,18 +131,18 @@ export default function AnimePreviewModal({
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 {media.format && (
-                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-xs font-bold uppercase">
+                  <span className="px-2 py-0.5 rounded-md bg-brand-yellow/15 text-brand-yellow border border-brand-yellow/30 text-xs font-bold uppercase">
                     {media.format}
                   </span>
                 )}
                 {media.status && (
-                  <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-medium">
+                  <span className="px-2 py-0.5 rounded-md bg-brand-card text-zinc-300 border border-brand-border text-xs font-medium">
                     {media.status}
                   </span>
                 )}
                 {media.averageScore && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold">
-                    <Star className="w-3 h-3 fill-amber-400" />
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/75 text-amber-300 border border-white/10 text-xs font-bold">
+                    <Star className="w-3 h-3 fill-brand-yellow text-brand-yellow" />
                     {media.averageScore}%
                   </span>
                 )}
@@ -160,33 +160,33 @@ export default function AnimePreviewModal({
               {/* Quick stats pills */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 text-xs text-zinc-300">
                 {media.season && (
-                  <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 bg-brand-card px-2.5 py-1.5 rounded-lg border border-brand-border">
+                    <Calendar className="w-3.5 h-3.5 text-brand-yellow" />
                     <span>
                       {media.season} {media.seasonYear || ''}
                     </span>
                   </div>
                 )}
                 {media.episodes ? (
-                  <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800">
-                    <Tv className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 bg-brand-card px-2.5 py-1.5 rounded-lg border border-brand-border">
+                    <Tv className="w-3.5 h-3.5 text-brand-yellow" />
                     <span>{media.episodes} Episodes</span>
                   </div>
                 ) : media.chapters ? (
-                  <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800">
-                    <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 bg-brand-card px-2.5 py-1.5 rounded-lg border border-brand-border">
+                    <BookOpen className="w-3.5 h-3.5 text-brand-yellow" />
                     <span>{media.chapters} Chapters</span>
                   </div>
                 ) : null}
                 {media.duration && (
-                  <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 bg-brand-card px-2.5 py-1.5 rounded-lg border border-brand-border">
+                    <Clock className="w-3.5 h-3.5 text-brand-yellow" />
                     <span>{media.duration} mins/ep</span>
                   </div>
                 )}
                 {media.studios?.nodes?.[0]?.name && (
-                  <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1.5 rounded-lg border border-zinc-800 col-span-2 sm:col-span-1">
-                    <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 bg-brand-card px-2.5 py-1.5 rounded-lg border border-brand-border col-span-2 sm:col-span-1">
+                    <Building2 className="w-3.5 h-3.5 text-brand-yellow" />
                     <span className="truncate">{media.studios.nodes[0].name}</span>
                   </div>
                 )}
@@ -199,17 +199,17 @@ export default function AnimePreviewModal({
             {isManga ? (
               <Link
                 href={`/manga/${media.id}`}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light text-black text-xs font-black transition-all shadow-lg shadow-brand-yellow/30"
               >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-4 h-4 stroke-[2.5]" />
                 Read Chapters Now
               </Link>
             ) : (
               <Link
                 href={`/manga/${targetMangaId}`}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light text-black text-xs font-black transition-all shadow-lg shadow-brand-yellow/30"
               >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-4 h-4 stroke-[2.5]" />
                 Read Manga Adaptation
               </Link>
             )}
@@ -277,7 +277,7 @@ export default function AnimePreviewModal({
             media.trailer?.id && (
               <div className="space-y-2 pt-2 border-t border-zinc-800/80">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-indigo-400" />
+                  <Film className="w-3.5 h-3.5 text-brand-yellow" />
                   Official Trailer
                 </h4>
                 <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-zinc-800 bg-black shadow-lg">

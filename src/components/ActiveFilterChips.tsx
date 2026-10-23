@@ -127,7 +127,7 @@ export default function ActiveFilterChips({
     <div className="flex flex-wrap items-center gap-2 pt-2 pb-1 animate-in fade-in duration-200">
       <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 mr-1">
         <span>Active Filters</span>
-        <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[11px] flex items-center justify-center font-bold">
+        <span className="w-5 h-5 rounded-full bg-brand-yellow/20 text-brand-yellow border border-brand-yellow/30 text-[11px] flex items-center justify-center font-bold">
           {chips.length}
         </span>
       </div>
@@ -135,13 +135,13 @@ export default function ActiveFilterChips({
       {chips.map((chip, idx) => (
         <span
           key={`${chip.key}-${chip.value || chip.label}-${idx}`}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-700/80 text-zinc-200 hover:border-zinc-600 transition-colors shadow-xs"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-card border border-brand-border text-zinc-200 hover:border-brand-yellow/50 transition-colors shadow-xs"
         >
           <span>{chip.label}</span>
           <button
             type="button"
             onClick={() => onRemoveFilter(chip.key, chip.value)}
-            className="text-zinc-400 hover:text-white rounded-full p-0.5 hover:bg-zinc-800 transition-colors"
+            className="text-zinc-400 hover:text-brand-yellow rounded-full p-0.5 hover:bg-brand-card-light transition-colors"
             aria-label={`Remove filter ${chip.label}`}
           >
             <X className="w-3 h-3" />

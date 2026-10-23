@@ -205,9 +205,9 @@ export default function AnimeFilterSidebar({
   return (
     <div className="flex flex-col gap-6 text-zinc-100">
       {/* Header with Title and Reset */}
-      <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+      <div className="flex items-center justify-between pb-3 border-b border-brand-border">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-indigo-400" />
+          <Filter className="w-4 h-4 text-brand-yellow" />
           <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
             Filters & Search
           </h2>
@@ -215,7 +215,7 @@ export default function AnimeFilterSidebar({
         <button
           type="button"
           onClick={onResetAll}
-          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-rose-400 transition-colors font-medium px-2 py-1 rounded hover:bg-zinc-800/80"
+          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-rose-400 transition-colors font-medium px-2 py-1 rounded hover:bg-brand-card-light"
         >
           <RotateCcw className="w-3 h-3" />
           Reset All
@@ -225,13 +225,13 @@ export default function AnimeFilterSidebar({
       {/* Media Type Switcher: Anime vs Manga */}
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-zinc-400">Media Type</label>
-        <div className="grid grid-cols-2 gap-1.5 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800">
+        <div className="grid grid-cols-2 gap-1.5 bg-brand-card p-1 rounded-xl border border-brand-border">
           <button
             type="button"
             onClick={() => onFilterChange({ type: 'MANGA', format: undefined, episodes: undefined })}
             className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               (filters.type || 'MANGA') === 'MANGA'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                ? 'bg-brand-yellow text-black font-black shadow-md shadow-brand-yellow/30'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -243,7 +243,7 @@ export default function AnimeFilterSidebar({
             onClick={() => onFilterChange({ type: 'ANIME', format: undefined, chapters: undefined })}
             className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               filters.type === 'ANIME'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                ? 'bg-brand-yellow text-black font-black shadow-md shadow-brand-yellow/30'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -297,7 +297,7 @@ export default function AnimeFilterSidebar({
           <select
             value={filters.sort || 'POPULARITY_DESC'}
             onChange={(e) => onFilterChange({ sort: e.target.value })}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer"
+            className="w-full bg-brand-card border border-brand-border rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-brand-yellow appearance-none cursor-pointer"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value} className="bg-zinc-900">
@@ -317,10 +317,10 @@ export default function AnimeFilterSidebar({
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-300 hover:text-white"
         >
           <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+            <Layers className="w-3.5 h-3.5 text-brand-yellow" />
             Genres
             {filters.genres && filters.genres.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-brand-yellow/20 text-brand-yellow border border-brand-yellow/30 font-bold">
                 {filters.genres.length}
               </span>
             )}
@@ -346,10 +346,10 @@ export default function AnimeFilterSidebar({
                     selected
                       ? isHentai
                         ? 'bg-rose-600 text-white border-rose-500 shadow-xs shadow-rose-600/30'
-                        : 'bg-indigo-600 text-white border-indigo-500 shadow-xs shadow-indigo-600/30'
+                        : 'bg-brand-yellow text-black border-brand-yellow font-extrabold shadow-xs shadow-brand-yellow/30'
                       : isHentai
-                        ? 'bg-zinc-900/80 border-rose-900/50 text-rose-400 hover:text-rose-200 hover:border-rose-700/60'
-                        : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                        ? 'bg-brand-card border-rose-900/50 text-rose-400 hover:text-rose-200 hover:border-rose-700/60'
+                        : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200 hover:border-brand-yellow/40'
                   }`}
                 >
                   {selected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -367,17 +367,17 @@ export default function AnimeFilterSidebar({
       </div>
 
       {/* Format / Type */}
-      <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+      <div className="space-y-2 pt-2 border-t border-brand-border">
         <button
           type="button"
           onClick={() => toggleSection('format')}
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-300 hover:text-white"
         >
           <span className="flex items-center gap-1.5">
-            <Film className="w-3.5 h-3.5 text-indigo-400" />
+            <Film className="w-3.5 h-3.5 text-brand-yellow" />
             Format
             {filters.format && filters.format.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-brand-yellow/20 text-brand-yellow border border-brand-yellow/30 font-bold">
                 {filters.format.length}
               </span>
             )}
@@ -400,12 +400,12 @@ export default function AnimeFilterSidebar({
                   onClick={() => handleFormatToggle(fmt.value)}
                   className={`text-[11px] font-medium px-2 py-1.5 rounded-lg border text-left transition-all flex items-center justify-between ${
                     selected
-                      ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/60'
-                      : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-brand-yellow/20 text-brand-yellow border-brand-yellow/60 font-bold'
+                      : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <span>{fmt.label}</span>
-                  {selected && <Check className="w-3 h-3 text-indigo-400 stroke-[3]" />}
+                  {selected && <Check className="w-3 h-3 text-brand-yellow stroke-[3]" />}
                 </button>
               );
             })}
@@ -414,7 +414,7 @@ export default function AnimeFilterSidebar({
       </div>
 
       {/* Status */}
-      <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+      <div className="space-y-2 pt-2 border-t border-brand-border">
         <button
           type="button"
           onClick={() => toggleSection('status')}
@@ -439,12 +439,12 @@ export default function AnimeFilterSidebar({
                   onClick={() => onFilterChange({ status: st.value })}
                   className={`w-full text-[11px] font-medium px-2.5 py-1.5 rounded-lg border text-left transition-all flex items-center justify-between ${
                     isSelected
-                      ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/60'
-                      : 'bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-brand-yellow/20 text-brand-yellow border-brand-yellow/60 font-bold'
+                      : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <span>{st.label}</span>
-                  {isSelected && <Check className="w-3 h-3 text-indigo-400" />}
+                  {isSelected && <Check className="w-3 h-3 text-brand-yellow" />}
                 </button>
               );
             })}
@@ -460,7 +460,7 @@ export default function AnimeFilterSidebar({
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-300 hover:text-white"
         >
           <span className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+            <Calendar className="w-3.5 h-3.5 text-brand-yellow" />
             Season & Year
           </span>
           {sectionsOpen.seasonal ? (
@@ -487,8 +487,8 @@ export default function AnimeFilterSidebar({
                     }
                     className={`text-[11px] font-medium px-2 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
                       isSelected
-                        ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/60'
-                        : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        ? 'bg-brand-yellow/20 text-brand-yellow border-brand-yellow/60 font-bold'
+                        : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
                     <span>{s.icon}</span>
@@ -513,11 +513,11 @@ export default function AnimeFilterSidebar({
                       yearMax: undefined,
                     })
                   }
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-brand-card border border-brand-border rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-yellow"
                 >
                   <option value="">Any Year</option>
                   {yearList.map((y) => (
-                    <option key={y} value={y} className="bg-zinc-900">
+                    <option key={y} value={y} className="bg-brand-card">
                       {y}
                     </option>
                   ))}
@@ -536,11 +536,11 @@ export default function AnimeFilterSidebar({
                       year: undefined,
                     })
                   }
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-brand-card border border-brand-border rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-yellow"
                 >
                   <option value="">Any</option>
                   {yearList.map((y) => (
-                    <option key={y} value={y} className="bg-zinc-900">
+                    <option key={y} value={y} className="bg-brand-card">
                       {y}
                     </option>
                   ))}
@@ -552,14 +552,14 @@ export default function AnimeFilterSidebar({
       </div>
 
       {/* Minimum Score */}
-      <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+      <div className="space-y-2 pt-2 border-t border-brand-border">
         <button
           type="button"
           onClick={() => toggleSection('score')}
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-300 hover:text-white"
         >
           <span className="flex items-center gap-1.5">
-            <Star className="w-3.5 h-3.5 text-amber-400" />
+            <Star className="w-3.5 h-3.5 fill-brand-yellow text-brand-yellow" />
             Minimum Score
           </span>
           {sectionsOpen.score ? (
@@ -580,8 +580,8 @@ export default function AnimeFilterSidebar({
                   onClick={() => onFilterChange({ minScore: sc.value })}
                   className={`py-1.5 text-center text-xs font-bold rounded-lg border transition-all ${
                     isSelected
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/60'
-                      : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-brand-yellow/20 text-brand-yellow border-brand-yellow/60 font-black'
+                      : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {sc.label}
@@ -593,7 +593,7 @@ export default function AnimeFilterSidebar({
       </div>
 
       {/* Chapter Count (for Manga) or Episode Count (for Anime) */}
-      <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+      <div className="space-y-2 pt-2 border-t border-brand-border">
         <button
           type="button"
           onClick={() => toggleSection('episodes')}
@@ -625,8 +625,8 @@ export default function AnimeFilterSidebar({
                   }
                   className={`py-1.5 text-center text-[11px] font-bold rounded-lg border transition-all ${
                     isSelected
-                      ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/60'
-                      : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-brand-yellow/20 text-brand-yellow border-brand-yellow/60 font-black'
+                      : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {item.label}
@@ -638,14 +638,14 @@ export default function AnimeFilterSidebar({
       </div>
 
       {/* Advanced Filters: Age Rating & Source Material */}
-      <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+      <div className="space-y-2 pt-2 border-t border-brand-border">
         <button
           type="button"
           onClick={() => toggleSection('advanced')}
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-300 hover:text-white"
         >
           <span className="flex items-center gap-1.5">
-            <ShieldAlert className="w-3.5 h-3.5 text-indigo-400" />
+            <ShieldAlert className="w-3.5 h-3.5 text-brand-yellow" />
             Source & Age Rating
           </span>
           {sectionsOpen.advanced ? (
@@ -665,10 +665,10 @@ export default function AnimeFilterSidebar({
               <select
                 value={filters.ageRating || 'ALL'}
                 onChange={(e) => onFilterChange({ ageRating: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-brand-card border border-brand-border rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-yellow"
               >
                 {AGE_RATINGS.map((r) => (
-                  <option key={r.value} value={r.value} className="bg-zinc-900">
+                  <option key={r.value} value={r.value} className="bg-brand-card">
                     {r.label}
                   </option>
                 ))}
@@ -690,8 +690,8 @@ export default function AnimeFilterSidebar({
                       onClick={() => handleSourceToggle(src.value)}
                       className={`text-[10px] font-medium px-2 py-1 rounded-md border transition-all ${
                         selected
-                          ? 'bg-indigo-600/25 text-indigo-300 border-indigo-500/60'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                          ? 'bg-brand-yellow/20 text-brand-yellow border-brand-yellow/60 font-bold'
+                          : 'bg-brand-card border-brand-border text-zinc-400 hover:text-zinc-200'
                       }`}
                     >
                       {src.label}
@@ -706,18 +706,18 @@ export default function AnimeFilterSidebar({
 
       {/* Mobile Drawer Bottom Apply button */}
       {isMobileDrawer && (
-        <div className="sticky bottom-0 pt-4 pb-2 bg-zinc-950 border-t border-zinc-800 mt-4 flex items-center gap-3">
+        <div className="sticky bottom-0 pt-4 pb-2 bg-brand-bg border-t border-brand-border mt-4 flex items-center gap-3">
           <button
             type="button"
             onClick={onResetAll}
-            className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-xs font-semibold text-zinc-300 hover:bg-zinc-900"
+            className="flex-1 py-2.5 rounded-xl border border-brand-border text-xs font-semibold text-zinc-300 hover:bg-brand-card"
           >
             Reset
           </button>
           <button
             type="button"
             onClick={onCloseMobileDrawer}
-            className="flex-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30"
+            className="flex-2 py-2.5 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light text-xs font-black text-black shadow-lg shadow-brand-yellow/30"
           >
             Show Results {totalResults ? `(${totalResults})` : ''}
           </button>

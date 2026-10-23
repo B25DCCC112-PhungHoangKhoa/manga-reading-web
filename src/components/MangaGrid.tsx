@@ -18,13 +18,12 @@ interface MangaGridProps {
 
 function MangaCardSkeleton() {
   return (
-    <div className="flex flex-col bg-zinc-900/40 rounded-xl overflow-hidden border border-zinc-800/80 animate-pulse">
-      <div className="relative aspect-[3/4] w-full bg-zinc-800/70" />
-      <div className="p-3.5 space-y-2">
-        <div className="h-4 bg-zinc-800/80 rounded w-5/6" />
-        <div className="h-3 bg-zinc-800/50 rounded w-1/2" />
+    <div className="flex flex-col bg-brand-card rounded-2xl overflow-hidden border border-brand-border/60 animate-pulse">
+      <div className="relative aspect-[3/4] w-full bg-zinc-800/60" />
+      <div className="p-3 space-y-2">
+        <div className="h-3.5 bg-zinc-800/80 rounded w-5/6" />
         <div className="flex justify-between pt-1">
-          <div className="h-2.5 bg-zinc-800/40 rounded w-1/3" />
+          <div className="h-2.5 bg-zinc-800/60 rounded w-1/3" />
           <div className="h-2.5 bg-zinc-800/40 rounded w-1/4" />
         </div>
       </div>
@@ -142,16 +141,16 @@ export default function MangaGrid({
   if (!items || items.length === 0) return null;
 
   return (
-    <section id={id} className="py-8 scroll-mt-24">
-      <div className="flex items-center justify-between mb-6">
+    <section id={id} className="py-6 scroll-mt-24">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2.5">
-            {icon && <span className="text-indigo-400">{icon}</span>}
+            {icon && <span>{icon}</span>}
             <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
               {title}
             </h2>
             {isLoading && (
-              <Loader2 className="w-4 h-4 text-indigo-400 animate-spin ml-1" />
+              <Loader2 className="w-4 h-4 text-brand-yellow animate-spin ml-1" />
             )}
           </div>
           {subtitle && (
@@ -160,10 +159,9 @@ export default function MangaGrid({
         </div>
 
         {apiEndpoint && totalPages > 1 && (
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-xs font-medium text-zinc-400">
-              Page <span className="text-zinc-200 font-semibold">{currentPage}</span> of{' '}
-              <span className="text-zinc-200 font-semibold">{totalPages}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-zinc-400">
+              <span className="text-brand-yellow font-black">{currentPage}</span> / {totalPages}
             </span>
           </div>
         )}
@@ -181,9 +179,9 @@ export default function MangaGrid({
 
       {/* Pagination Controls */}
       {apiEndpoint && totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-zinc-800/80">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-brand-border">
           <div className="text-xs text-zinc-400 order-2 sm:order-1 font-medium">
-            Showing Page <span className="text-zinc-200 font-bold">{currentPage}</span> of{' '}
+            Showing Page <span className="text-brand-yellow font-bold">{currentPage}</span> of{' '}
             <span className="text-zinc-200 font-bold">{totalPages}</span>
           </div>
 
@@ -192,7 +190,7 @@ export default function MangaGrid({
               type="button"
               disabled={currentPage <= 1 || isLoading}
               onClick={() => handlePageChange(currentPage - 1)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-700 disabled:opacity-40 disabled:pointer-events-none transition-all shadow-sm"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-brand-card border border-brand-border text-xs font-semibold text-zinc-300 hover:text-white hover:border-brand-yellow/50 hover:bg-brand-card-light disabled:opacity-40 disabled:pointer-events-none transition-all shadow-sm"
               aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -222,8 +220,8 @@ export default function MangaGrid({
                     onClick={() => handlePageChange(pageNum)}
                     className={`min-w-[32px] h-8 flex items-center justify-center px-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-500/30 cursor-default'
-                        : 'bg-zinc-900/90 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-700'
+                        ? 'bg-brand-yellow text-black font-black shadow-md shadow-brand-yellow/30 border border-brand-yellow cursor-default'
+                        : 'bg-brand-card border border-brand-border text-zinc-300 hover:text-white hover:border-brand-yellow/50 hover:bg-brand-card-light'
                     }`}
                   >
                     {pageNum}
@@ -236,7 +234,7 @@ export default function MangaGrid({
               type="button"
               disabled={!hasNextPage || currentPage >= totalPages || isLoading}
               onClick={() => handlePageChange(currentPage + 1)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-700 disabled:opacity-40 disabled:pointer-events-none transition-all shadow-sm"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-brand-card border border-brand-border text-xs font-semibold text-zinc-300 hover:text-white hover:border-brand-yellow/50 hover:bg-brand-card-light disabled:opacity-40 disabled:pointer-events-none transition-all shadow-sm"
               aria-label="Next page"
             >
               <span className="hidden sm:inline">Next</span>

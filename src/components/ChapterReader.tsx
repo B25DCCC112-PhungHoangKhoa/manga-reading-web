@@ -637,7 +637,7 @@ export default function ChapterReader({
         aria-label="Switch reading provider"
       >
         {isSwitchingProvider ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-yellow" />
         ) : (
           <span className="text-sm leading-none">{currentProviderMeta.icon}</span>
         )}
@@ -657,11 +657,11 @@ export default function ChapterReader({
           onClick={(e) => e.stopPropagation()}
           className={`absolute ${
             align === 'right' ? 'right-0' : 'left-0'
-          } mt-2 w-56 rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 shadow-2xl p-1.5 z-50`}
+          } mt-2 w-56 rounded-2xl bg-brand-card/95 backdrop-blur-xl border border-brand-border shadow-2xl p-1.5 z-50`}
         >
-          <div className="px-2.5 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800/80 mb-1 flex items-center justify-between">
+          <div className="px-2.5 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-brand-border/80 mb-1 flex items-center justify-between">
             <span>Change Provider</span>
-            <Globe className="w-3 h-3 text-zinc-500" />
+            <Globe className="w-3.5 h-3.5 text-brand-yellow" />
           </div>
           <div className="space-y-0.5">
             {PROVIDERS_LIST.map((p) => {
@@ -674,8 +674,8 @@ export default function ChapterReader({
                   disabled={isSwitchingProvider}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-colors ${
                     isCurrent
-                      ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/20'
-                      : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
+                      ? 'bg-brand-yellow/15 text-brand-yellow font-bold border border-brand-yellow/30'
+                      : 'text-zinc-300 hover:text-white hover:bg-brand-card-light'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -686,9 +686,9 @@ export default function ChapterReader({
                     </span>
                   </div>
                   {isTargetLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-yellow" />
                   ) : isCurrent ? (
-                    <Check className="w-4 h-4 text-indigo-400" />
+                    <Check className="w-4 h-4 text-brand-yellow" />
                   ) : null}
                 </button>
               );
@@ -929,14 +929,14 @@ export default function ChapterReader({
             {navData?.nextChapter && (
               <button
                 onClick={() => navigateToChapter(navData.nextChapter!.id)}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+                className="px-4 py-2.5 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light text-black text-xs font-black transition-all shadow-md shadow-brand-yellow/20"
               >
                 Go to Next Chapter ({navData.nextChapter.chapter ? `Ch. ${navData.nextChapter.chapter}` : 'Next'}) →
               </button>
             )}
 
             {/* Alternative In-App Providers */}
-            <div className="pt-3 border-t border-zinc-800/80 text-left space-y-2">
+            <div className="pt-3 border-t border-brand-border/80 text-left space-y-2">
               <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider text-center">
                 Or switch provider to read in-app:
               </p>
@@ -946,7 +946,7 @@ export default function ChapterReader({
                     key={p.id}
                     onClick={() => handleSwitchProvider(p.id)}
                     disabled={isSwitchingProvider}
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-brand-card hover:bg-brand-card-light text-zinc-200 text-xs font-semibold border border-brand-border transition-colors disabled:opacity-50"
                   >
                     <span>{p.icon}</span>
                     <span>{p.name}</span>
@@ -958,7 +958,7 @@ export default function ChapterReader({
 
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
-              className="px-4 py-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs font-semibold border border-zinc-700 transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-brand-card hover:bg-brand-card-light text-zinc-300 text-xs font-semibold border border-brand-border transition-colors"
             >
               Return to Chapter List
             </Link>
@@ -966,8 +966,8 @@ export default function ChapterReader({
         </div>
 
         {feedbackMessage && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900/95 border border-indigo-500/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand-card/95 border border-brand-yellow/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-yellow" />
             <span>{feedbackMessage}</span>
           </div>
         )}
@@ -1000,7 +1000,7 @@ export default function ChapterReader({
         </header>
 
         <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="w-10 h-10 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="w-10 h-10 border-3 border-brand-yellow/30 border-t-brand-yellow rounded-full animate-spin" />
           <p className="text-sm text-zinc-400 font-medium animate-pulse">
             Đang tải chương {initialData.chapterNumber || ''}...
           </p>
@@ -1012,15 +1012,15 @@ export default function ChapterReader({
   // Handle unavailable chapter (e.g. MangaDex 404 / deleted files)
   if (isUnavailable || (!isLoadingPages && pages.length === 0)) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-brand-bg text-zinc-100 flex flex-col items-center justify-center p-4">
         {/* Top Header Bar */}
-        <header className="fixed top-0 left-0 right-0 h-14 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 px-4 flex items-center justify-between z-50">
+        <header className="fixed top-0 left-0 right-0 h-14 bg-brand-bg/95 backdrop-blur-md border-b border-brand-border px-4 flex items-center justify-between z-50">
           <div className="flex items-center gap-3">
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
-              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
+              className="p-2 rounded-xl bg-brand-card hover:bg-brand-card-light text-zinc-300 hover:text-white border border-brand-border transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-brand-yellow" />
             </Link>
             <span className="text-sm font-bold text-white">
               {initialData.chapterNumber ? `Chapter ${initialData.chapterNumber}` : 'Chapter'}
@@ -1029,7 +1029,7 @@ export default function ChapterReader({
 
           {/* Quick Chapter Selector */}
           {navData?.chapters && navData.chapters.length > 0 && (
-            <div className="flex items-center gap-1 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+            <div className="flex items-center gap-1 bg-brand-card rounded-xl p-1 border border-brand-border">
               <button
                 onClick={() => navData?.prevChapter && navigateToChapter(navData.prevChapter.id)}
                 disabled={!navData?.prevChapter}
@@ -1043,7 +1043,7 @@ export default function ChapterReader({
                 className="bg-transparent text-xs font-semibold text-zinc-200 px-1 py-0.5 focus:outline-none cursor-pointer max-w-[150px] truncate"
               >
                 {navData.chapters.map((ch) => (
-                  <option key={ch.id} value={ch.id} className="bg-zinc-900 text-zinc-100">
+                  <option key={ch.id} value={ch.id} className="bg-brand-card text-zinc-100">
                     {ch.chapter ? `Chapter ${ch.chapter}` : 'Chapter'}
                   </option>
                 ))}
@@ -1069,7 +1069,7 @@ export default function ChapterReader({
           </div>
         </header>
 
-        <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-2xl text-center space-y-5 mt-14 backdrop-blur-md">
+        <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl bg-brand-card border border-brand-border shadow-2xl text-center space-y-5 mt-14 backdrop-blur-md">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
             <AlertCircle className="w-7 h-7" />
           </div>
@@ -1091,14 +1091,14 @@ export default function ChapterReader({
             {navData?.nextChapter && (
               <button
                 onClick={() => navigateToChapter(navData.nextChapter!.id)}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30"
+                className="px-5 py-2.5 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light text-black text-xs font-black transition-all shadow-md shadow-brand-yellow/30"
               >
                 Try Next Chapter ({navData.nextChapter.chapter ? `Ch. ${navData.nextChapter.chapter}` : 'Next'}) →
               </button>
             )}
 
             {/* Alternative Provider Quick Switches */}
-            <div className="pt-3 border-t border-zinc-800/80 text-left space-y-2">
+            <div className="pt-3 border-t border-brand-border text-left space-y-2">
               <p className="text-xs text-zinc-400 text-center">
                 Try switching to another provider for this chapter:
               </p>
@@ -1108,7 +1108,7 @@ export default function ChapterReader({
                     key={p.id}
                     onClick={() => handleSwitchProvider(p.id)}
                     disabled={isSwitchingProvider}
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-brand-card-light hover:bg-zinc-800 text-zinc-200 text-xs font-semibold border border-brand-border transition-colors disabled:opacity-50"
                   >
                     <span>{p.icon}</span>
                     <span>{p.name}</span>
@@ -1120,7 +1120,7 @@ export default function ChapterReader({
 
             <Link
               href={mangaId ? `/manga/${mangaId}` : '/'}
-              className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-all border border-zinc-700"
+              className="px-5 py-2.5 rounded-xl bg-brand-card-light hover:bg-zinc-800 text-white text-xs font-semibold transition-all border border-brand-border"
             >
               Return to Chapter List
             </Link>
@@ -1128,8 +1128,8 @@ export default function ChapterReader({
         </div>
 
         {feedbackMessage && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900/95 border border-indigo-500/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand-card/95 border border-brand-yellow/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-yellow" />
             <span>{feedbackMessage}</span>
           </div>
         )}
@@ -1244,7 +1244,7 @@ export default function ChapterReader({
                 onClick={() => setReadingMode('vertical')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   readingMode === 'vertical'
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-brand-yellow text-black font-extrabold shadow-sm'
                     : 'text-zinc-400 hover:text-white'
                 }`}
                 title="Continuous Vertical (Webtoon) Mode [M]"
@@ -1256,7 +1256,7 @@ export default function ChapterReader({
                 onClick={() => setReadingMode('single')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   readingMode === 'single'
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-brand-yellow text-black font-extrabold shadow-sm'
                     : 'text-zinc-400 hover:text-white'
                 }`}
                 title="Single Page Reader Mode [M]"
@@ -1414,11 +1414,11 @@ export default function ChapterReader({
         {/* END OF CHAPTER NAVIGATION CARD */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="w-full mt-10 p-6 sm:p-8 rounded-2xl bg-zinc-900/90 border border-zinc-800 backdrop-blur-md shadow-2xl text-center space-y-6"
+          className="w-full mt-10 p-6 sm:p-8 rounded-2xl bg-brand-card/95 border border-brand-border backdrop-blur-md shadow-2xl text-center space-y-6"
         >
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold uppercase tracking-wider">
-              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20 text-xs font-bold uppercase tracking-wider">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-yellow" />
               Finished Reading
             </span>
             <h3 className="text-xl sm:text-2xl font-bold text-white">
@@ -1436,7 +1436,7 @@ export default function ChapterReader({
             <button
               onClick={() => navData?.prevChapter && navigateToChapter(navData.prevChapter.id)}
               disabled={!navData?.prevChapter}
-              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-zinc-700 transition-all active:scale-98"
+              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-card-light hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-brand-card text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold border border-brand-border transition-all active:scale-98"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>
@@ -1448,7 +1448,7 @@ export default function ChapterReader({
             <button
               onClick={() => navData?.nextChapter && navigateToChapter(navData.nextChapter.id)}
               disabled={!navData?.nextChapter}
-              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:opacity-30 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-102 active:scale-98"
+              className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light disabled:bg-zinc-800 disabled:opacity-30 text-black text-xs sm:text-sm font-black shadow-lg shadow-brand-yellow/30 transition-all hover:scale-102 active:scale-98"
             >
               <span>
                 {navData?.nextChapter?.chapter ? `Chapter ${navData.nextChapter.chapter}` : 'Next Chapter'}
@@ -1464,7 +1464,7 @@ export default function ChapterReader({
                 <select
                   value={initialData.chapterId}
                   onChange={(e) => navigateToChapter(e.target.value)}
-                  className="bg-zinc-800 text-xs font-medium text-zinc-200 px-4 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-xs"
+                  className="bg-brand-card-light text-xs font-semibold text-zinc-200 px-4 py-2.5 rounded-xl border border-brand-border focus:outline-none focus:border-brand-yellow cursor-pointer max-w-xs"
                 >
                   {navData.chapters.map((ch) => (
                     <option key={ch.id} value={ch.id}>
@@ -1479,9 +1479,9 @@ export default function ChapterReader({
             {mangaId && (
               <Link
                 href={`/manga/${mangaId}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-card-light hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-brand-border transition-colors"
               >
-                <BookOpen className="w-4 h-4 text-indigo-400" />
+                <BookOpen className="w-4 h-4 text-brand-yellow" />
                 <span>Manga Overview</span>
               </Link>
             )}
@@ -1497,7 +1497,7 @@ export default function ChapterReader({
             : 'translate-y-12 opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-2xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 shadow-2xl text-xs text-zinc-300">
+        <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-2xl bg-brand-card/95 backdrop-blur-md border border-brand-border shadow-2xl text-xs text-zinc-300">
           {/* Quick Chapter Navigation in Bottom Bar */}
           {navData?.prevChapter && (
             <button
@@ -1505,7 +1505,7 @@ export default function ChapterReader({
                 e.stopPropagation();
                 navigateToChapter(navData.prevChapter!.id);
               }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-card-light hover:bg-zinc-800 text-zinc-200 text-xs font-medium transition-colors"
               title={`Previous Chapter (${navData.prevChapter.chapter || ''}) [P]`}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -1555,7 +1555,7 @@ export default function ChapterReader({
                   e.stopPropagation();
                   navigateToChapter(navData.nextChapter!.id);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-sm"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-yellow hover:bg-brand-yellow-light text-black text-xs font-black transition-colors shadow-sm"
                 title={`Next Chapter (${navData.nextChapter.chapter || ''}) [N]`}
               >
                 <span className="hidden sm:inline">Next Ch</span>
@@ -1575,7 +1575,7 @@ export default function ChapterReader({
             className="flex items-center gap-1 p-1.5 px-2.5 rounded-lg hover:bg-zinc-800 text-zinc-300 transition-colors"
             title="Scroll to top"
           >
-            <ArrowUp className="w-3.5 h-3.5 text-indigo-400" />
+            <ArrowUp className="w-3.5 h-3.5 text-brand-yellow" />
             <span className="hidden sm:inline">Top</span>
           </button>
         </div>
@@ -1583,8 +1583,8 @@ export default function ChapterReader({
 
       {/* Toast Feedback for Provider Switch */}
       {feedbackMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900/95 border border-indigo-500/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand-card/95 border border-brand-yellow/40 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-yellow" />
           <span>{feedbackMessage}</span>
         </div>
       )}

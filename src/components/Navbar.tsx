@@ -117,22 +117,19 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled || isMobileMenuOpen
-          ? 'bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80 shadow-lg shadow-black/20'
-          : 'bg-gradient-to-b from-zinc-950/90 to-transparent'
+          ? 'bg-brand-bg/95 backdrop-blur-md border-b border-brand-border/80 shadow-lg shadow-black/40'
+          : 'bg-gradient-to-b from-brand-bg/95 to-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5 sm:gap-4">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+        {/* Brand Logo matching MangaPulse Mobile */}
+        <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-yellow flex items-center justify-center text-black shadow-md shadow-brand-yellow/20 group-hover:scale-105 transition-transform">
+            <BookOpen className="w-5 h-5 stroke-[2.5]" />
           </div>
-          <div>
-            <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-indigo-400 transition-colors">
-              Manga<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400">Pulse</span>
-            </span>
-            <span className="hidden sm:inline-block ml-2 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
-              Live
+          <div className="flex items-center">
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-white group-hover:opacity-90 transition-opacity">
+              Manga<span className="text-brand-yellow">Pulse</span>
             </span>
           </div>
         </Link>
@@ -141,49 +138,49 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
           <Link
             href="/"
-            className={`hover:text-white transition-colors flex items-center gap-1.5 ${
-              pathname === '/' ? 'text-indigo-400 font-semibold' : ''
+            className={`hover:text-brand-yellow transition-colors flex items-center gap-1.5 ${
+              pathname === '/' ? 'text-brand-yellow font-bold' : ''
             }`}
           >
-            <Compass className="w-4 h-4 text-indigo-400" />
+            <Compass className={`w-4 h-4 ${pathname === '/' ? 'text-brand-yellow' : 'text-zinc-400'}`} />
             Discover
           </Link>
           <Link
             href="/browse"
-            className={`hover:text-white transition-colors flex items-center gap-1.5 ${
-              pathname === '/browse' ? 'text-indigo-400 font-semibold' : 'text-indigo-300 font-semibold'
+            className={`hover:text-brand-yellow transition-colors flex items-center gap-1.5 ${
+              pathname === '/browse' ? 'text-brand-yellow font-bold' : ''
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+            <SlidersHorizontal className={`w-4 h-4 ${pathname === '/browse' ? 'text-brand-yellow' : 'text-zinc-400'}`} />
             Browse & Filter
           </Link>
           <Link
             href="/#trending"
-            className="hover:text-white transition-colors flex items-center gap-1.5"
+            className="hover:text-brand-yellow transition-colors flex items-center gap-1.5"
           >
-            <Flame className="w-4 h-4 text-amber-400" />
+            <Flame className="w-4 h-4 text-brand-yellow" />
             Trending
           </Link>
           <Link
             href="/#latest"
-            className="hover:text-white transition-colors flex items-center gap-1.5"
+            className="hover:text-brand-yellow transition-colors flex items-center gap-1.5"
           >
-            <Star className="w-4 h-4 text-pink-400" />
+            <Star className="w-4 h-4 text-brand-yellow" />
             Latest
           </Link>
         </nav>
 
-        {/* Search Bar & Dropdown */}
+        {/* Search Bar & Dropdown matching Mobile Pill Style */}
         <div ref={searchContainerRef} className="relative flex-1 max-w-xs sm:max-w-md">
           <div className="relative">
-            <Search className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-yellow" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchQuery.length >= 2 && setIsDropdownOpen(true)}
-              placeholder="Search manga..."
-              className="w-full bg-zinc-900/90 text-sm text-zinc-100 placeholder-zinc-500 pl-9 sm:pl-10 pr-8 sm:pr-9 py-1.5 sm:py-2 rounded-full border border-zinc-700/80 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner"
+              placeholder="Find comics..."
+              className="w-full bg-brand-card text-sm text-zinc-100 placeholder-zinc-400 pl-10 pr-9 py-2 rounded-full border border-brand-border focus:outline-none focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/40 transition-all shadow-inner"
             />
             {searchQuery && (
               <button
@@ -191,7 +188,7 @@ export default function Navbar() {
                   setSearchQuery('');
                   setIsDropdownOpen(false);
                 }}
-                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -200,14 +197,14 @@ export default function Navbar() {
 
           {/* Instant Search Results Dropdown */}
           {isDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-brand-card/95 backdrop-blur-md border border-brand-border rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
               {isSearching ? (
                 <div className="p-6 text-center text-sm text-zinc-400 flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  Searching AniList...
+                  <div className="w-4 h-4 border-2 border-brand-yellow border-t-transparent rounded-full animate-spin" />
+                  Searching comics...
                 </div>
               ) : searchResults.length > 0 ? (
-                <div className="py-2 divide-y divide-zinc-800/60 max-h-96 overflow-y-auto">
+                <div className="py-2 divide-y divide-brand-border/60 max-h-96 overflow-y-auto">
                   {searchResults.map((manga) => {
                     const title =
                       manga.title.english ||
@@ -223,7 +220,7 @@ export default function Navbar() {
                       <div
                         key={manga.id}
                         onClick={() => handleSelectManga(manga.id)}
-                        className="px-4 py-2.5 flex items-center gap-3.5 hover:bg-zinc-800/60 cursor-pointer transition-colors"
+                        className="px-4 py-2.5 flex items-center gap-3.5 hover:bg-brand-card-light cursor-pointer transition-colors"
                       >
                         <div className="relative w-11 h-15 shrink-0 rounded-md overflow-hidden bg-zinc-800 shadow-sm">
                           {cover && (
@@ -242,8 +239,8 @@ export default function Navbar() {
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             {manga.averageScore && (
-                              <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
-                                <Star className="w-3 h-3 fill-amber-400" />
+                              <span className="flex items-center gap-1 text-xs text-amber-300 font-bold">
+                                <Star className="w-3 h-3 fill-brand-yellow text-brand-yellow" />
                                 {manga.averageScore}%
                               </span>
                             )}
@@ -251,7 +248,7 @@ export default function Navbar() {
                               {manga.genres?.slice(0, 2).join(', ')}
                             </span>
                             {manga.status && (
-                              <span className="text-[10px] text-zinc-400 px-1.5 py-0.2 rounded bg-zinc-800">
+                              <span className="text-[10px] text-brand-yellow font-bold uppercase px-1.5 py-0.2 rounded bg-black/60 border border-brand-border">
                                 {manga.status}
                               </span>
                             )}
@@ -277,10 +274,10 @@ export default function Navbar() {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMobileMenuOpen}
-          className="md:hidden shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-zinc-300 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/80 transition-all active:scale-95 shadow-sm"
+          className="md:hidden shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-zinc-300 hover:text-white bg-brand-card hover:bg-brand-card-light border border-brand-border transition-all active:scale-95 shadow-sm"
         >
           {isMobileMenuOpen ? (
-            <X className="w-5 h-5 text-indigo-400" />
+            <X className="w-5 h-5 text-brand-yellow" />
           ) : (
             <Menu className="w-5 h-5" />
           )}
@@ -291,7 +288,7 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div
           ref={mobileMenuRef}
-          className="md:hidden border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl animate-in slide-in-from-top-2 duration-200 shadow-2xl shadow-black/50"
+          className="md:hidden border-b border-brand-border bg-brand-bg/95 backdrop-blur-xl animate-in slide-in-from-top-2 duration-200 shadow-2xl shadow-black/50"
         >
           <nav className="px-4 py-3 space-y-1">
             <Link
@@ -299,11 +296,11 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 pathname === '/'
-                  ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/30'
-                  : 'text-zinc-300 hover:text-white hover:bg-zinc-900/80'
+                  ? 'bg-brand-yellow/15 text-brand-yellow border border-brand-yellow/30'
+                  : 'text-zinc-300 hover:text-white hover:bg-brand-card'
               }`}
             >
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-brand-yellow/10 flex items-center justify-center text-brand-yellow shrink-0">
                 <Compass className="w-4 h-4" />
               </div>
               <div className="flex-1">
@@ -317,15 +314,15 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 pathname === '/browse'
-                  ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/30'
-                  : 'text-zinc-300 hover:text-white hover:bg-zinc-900/80'
+                  ? 'bg-brand-yellow/15 text-brand-yellow border border-brand-yellow/30'
+                  : 'text-zinc-300 hover:text-white hover:bg-brand-card'
               }`}
             >
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-brand-yellow/10 flex items-center justify-center text-brand-yellow shrink-0">
                 <SlidersHorizontal className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-indigo-300">Browse & Filter</div>
+                <div className="font-semibold text-brand-yellow">Browse & Filter</div>
                 <div className="text-[11px] text-zinc-400">Filter by genre, year, status & sort</div>
               </div>
             </Link>
@@ -333,9 +330,9 @@ export default function Navbar() {
             <Link
               href="/#trending"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/80 transition-all"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-brand-card transition-all"
             >
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-brand-yellow/10 flex items-center justify-center text-brand-yellow shrink-0">
                 <Flame className="w-4 h-4" />
               </div>
               <div className="flex-1">
@@ -347,9 +344,9 @@ export default function Navbar() {
             <Link
               href="/#latest"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/80 transition-all"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-brand-card transition-all"
             >
-              <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-400 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-brand-yellow/10 flex items-center justify-center text-brand-yellow shrink-0">
                 <Star className="w-4 h-4" />
               </div>
               <div className="flex-1">

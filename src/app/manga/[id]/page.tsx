@@ -20,17 +20,17 @@ interface PageProps {
 
 function ChapterListSkeleton() {
   return (
-    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 sm:p-6 shadow-xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
+    <div className="bg-brand-card border border-brand-border rounded-2xl p-4 sm:p-6 shadow-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-brand-border">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-950/60 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-8 h-8 rounded-xl bg-brand-yellow/10 border border-brand-yellow/20 flex items-center justify-center text-brand-yellow">
             <Layers className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-zinc-200">Chapters</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[11px] font-medium text-indigo-300">
-                <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-yellow/10 border border-brand-yellow/20 text-[11px] font-bold text-brand-yellow">
+                <Loader2 className="w-3 h-3 animate-spin text-brand-yellow" />
                 Scanning providers...
               </span>
             </div>
@@ -39,8 +39,8 @@ function ChapterListSkeleton() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="h-8 w-28 bg-zinc-800/70 rounded-xl animate-pulse" />
-          <div className="h-8 w-24 bg-zinc-800/70 rounded-xl animate-pulse" />
+          <div className="h-8 w-28 bg-brand-card-light rounded-xl animate-pulse" />
+          <div className="h-8 w-24 bg-brand-card-light rounded-xl animate-pulse" />
         </div>
       </div>
 
@@ -48,12 +48,12 @@ function ChapterListSkeleton() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/60 animate-pulse"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-brand-card-light/40 border border-brand-border/60 animate-pulse"
           >
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-zinc-800/80" />
+              <div className="w-7 h-7 rounded-lg bg-zinc-800" />
               <div className="space-y-1.5">
-                <div className="h-4 w-36 sm:w-56 bg-zinc-800/80 rounded" />
+                <div className="h-4 w-36 sm:w-56 bg-zinc-800 rounded" />
                 <div className="h-3 w-20 sm:w-28 bg-zinc-800/40 rounded" />
               </div>
             </div>
@@ -184,17 +184,17 @@ export default async function MangaDetailPage({ params }: PageProps) {
             priority
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-b from-indigo-950/40 via-zinc-900 to-zinc-950" />
+          <div className="w-full h-full bg-gradient-to-b from-black via-zinc-900 to-brand-bg" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/80 to-transparent" />
 
         {/* Back Link */}
         <div className="absolute top-20 left-4 sm:left-8 z-20">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-950/70 hover:bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-700/60 backdrop-blur-md text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/70 hover:bg-black text-zinc-300 hover:text-white border border-brand-border backdrop-blur-md text-xs font-semibold transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5 text-brand-yellow" />
             <span>Back to Browse</span>
           </Link>
         </div>
@@ -204,7 +204,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-36 sm:-mt-44 relative z-20">
         <div className="flex flex-col md:flex-row items-start gap-8">
           {/* High-res Cover Art */}
-          <div className="w-48 sm:w-56 md:w-64 shrink-0 rounded-2xl overflow-hidden bg-zinc-800 shadow-2xl border-2 border-zinc-800/80 mx-auto md:mx-0">
+          <div className="w-48 sm:w-56 md:w-64 shrink-0 rounded-2xl overflow-hidden bg-brand-card shadow-2xl border-2 border-brand-border mx-auto md:mx-0">
             <div className="relative aspect-[3/4] w-full">
               <Image
                 src={coverUrl}
@@ -233,29 +233,29 @@ export default async function MangaDetailPage({ params }: PageProps) {
             {/* Badges / Chips */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
               {manga.averageScore && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold">
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-black/75 text-amber-300 border border-white/10 text-xs font-bold backdrop-blur-md">
+                  <Star className="w-3.5 h-3.5 fill-brand-yellow text-brand-yellow" />
                   {manga.averageScore}% Score
                 </span>
               )}
               {manga.status && (
-                <span className="px-3 py-1 rounded-xl bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-semibold">
+                <span className="px-3 py-1 rounded-xl bg-brand-card text-brand-yellow border border-brand-border text-xs font-extrabold uppercase">
                   {manga.status}
                 </span>
               )}
               {manga.format && (
-                <span className="px-3 py-1 rounded-xl bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-medium">
+                <span className="px-3 py-1 rounded-xl bg-brand-card text-zinc-300 border border-brand-border text-xs font-medium">
                   {manga.format}
                 </span>
               )}
               {manga.startDate?.year && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-zinc-800 text-zinc-300 border border-zinc-700 text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-brand-card text-zinc-300 border border-brand-border text-xs font-medium">
                   <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                   {manga.startDate.year}
                 </span>
               )}
               {manga.chapters && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20 text-xs font-bold">
                   <BookOpen className="w-3.5 h-3.5" />
                   {manga.chapters} Chapters
                 </span>
@@ -269,7 +269,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                   <Link
                     key={genre}
                     href={`/browse?type=MANGA&genres=${encodeURIComponent(genre)}`}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 hover:text-indigo-300 hover:border-indigo-500/40 border border-zinc-800 text-zinc-300 font-medium transition-colors"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-brand-card hover:bg-brand-card-light hover:text-brand-yellow hover:border-brand-yellow/40 border border-brand-border text-zinc-300 font-medium transition-colors"
                   >
                     {genre}
                   </Link>
@@ -291,14 +291,14 @@ export default async function MangaDetailPage({ params }: PageProps) {
             {manga.tags && manga.tags.length > 0 && (
               <div className="pt-2 text-left">
                 <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
-                  <Tag className="w-3.5 h-3.5 text-indigo-400" />
+                  <Tag className="w-3.5 h-3.5 text-brand-yellow" />
                   <span>Tags</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {manga.tags.slice(0, 8).map((tag) => (
                     <span
                       key={tag.id}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-zinc-900/90 text-zinc-400 border border-zinc-800"
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-brand-card text-zinc-400 border border-brand-border"
                     >
                       {tag.name}
                     </span>

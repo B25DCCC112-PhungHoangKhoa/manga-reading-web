@@ -287,7 +287,7 @@ function BrowseContent() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
+                <Sparkles className="w-5 h-5 text-brand-yellow" />
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                   Discover Anime & Manga
                 </h1>
@@ -301,12 +301,12 @@ function BrowseContent() {
             <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
-              className="lg:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700/80 text-zinc-200 text-xs font-bold hover:bg-zinc-800 transition-colors shadow-xs"
+              className="lg:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-card border border-brand-border text-zinc-200 text-xs font-bold hover:bg-brand-card-light transition-colors shadow-xs"
             >
-              <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+              <SlidersHorizontal className="w-4 h-4 text-brand-yellow" />
               <span>Filters</span>
               {activeCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-brand-yellow text-black text-[11px] font-black flex items-center justify-center">
                   {activeCount}
                 </span>
               )}
@@ -315,13 +315,13 @@ function BrowseContent() {
 
           {/* Search Input Bar */}
           <div className="relative max-w-2xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-yellow" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by anime title, alternative romaji/english name, or keywords..."
-              className="w-full bg-zinc-900/90 text-sm text-zinc-100 placeholder-zinc-500 pl-11 pr-10 py-3 rounded-2xl border border-zinc-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner"
+              className="w-full bg-brand-card text-sm text-zinc-100 placeholder-zinc-400 pl-11 pr-10 py-3 rounded-2xl border border-brand-border focus:outline-none focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/40 transition-all shadow-inner"
             />
             {searchInput && (
               <button
@@ -386,9 +386,9 @@ function BrowseContent() {
                 ))}
               </div>
             ) : (
-              <div className="min-h-[45vh] flex flex-col items-center justify-center p-8 text-center bg-zinc-900/20 border border-dashed border-zinc-800 rounded-2xl">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-800">
-                  <BookX className="w-8 h-8" />
+              <div className="min-h-[45vh] flex flex-col items-center justify-center p-8 text-center bg-brand-card/40 border border-dashed border-brand-border rounded-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-brand-card flex items-center justify-center text-zinc-500 mb-4 border border-brand-border">
+                  <BookX className="w-8 h-8 text-brand-yellow" />
                 </div>
                 <h3 className="text-lg font-bold text-white mb-1">
                   No Titles Matched Your Filters
@@ -399,7 +399,7 @@ function BrowseContent() {
                 <button
                   type="button"
                   onClick={handleResetAll}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+                  className="px-4 py-2 rounded-xl bg-brand-yellow hover:bg-brand-yellow-light text-black text-xs font-black transition-all shadow-md shadow-brand-yellow/30"
                 >
                   Reset All Filters
                 </button>
@@ -408,26 +408,26 @@ function BrowseContent() {
 
             {/* Pagination Bar */}
             {!isLoading && pageInfo.lastPage > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-10 pt-6 border-t border-zinc-800">
+              <div className="flex items-center justify-center gap-2 mt-10 pt-6 border-t border-brand-border">
                 <button
                   type="button"
                   disabled={pageInfo.currentPage <= 1}
                   onClick={() => handlePageChange(pageInfo.currentPage - 1)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-brand-card border border-brand-border text-xs font-semibold text-zinc-300 hover:text-white hover:border-brand-yellow/40 hover:bg-brand-card-light disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Prev
                 </button>
 
                 <div className="flex items-center gap-1 px-2 text-xs font-medium text-zinc-400">
-                  <span>Page {pageInfo.currentPage} of {pageInfo.lastPage}</span>
+                  <span>Page <strong className="text-brand-yellow">{pageInfo.currentPage}</strong> of <strong>{pageInfo.lastPage}</strong></span>
                 </div>
 
                 <button
                   type="button"
                   disabled={!pageInfo.hasNextPage}
                   onClick={() => handlePageChange(pageInfo.currentPage + 1)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-brand-card border border-brand-border text-xs font-semibold text-zinc-300 hover:text-white hover:border-brand-yellow/40 hover:bg-brand-card-light disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />
@@ -447,12 +447,12 @@ function BrowseContent() {
           onClick={() => setMobileDrawerOpen(false)}
         >
           <div
-            className="w-full max-w-sm h-full bg-zinc-950 border-l border-zinc-800 p-5 overflow-y-auto flex flex-col animate-in slide-in-from-right duration-200"
+            className="w-full max-w-sm h-full bg-brand-bg border-l border-brand-border p-5 overflow-y-auto flex flex-col animate-in slide-in-from-right duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-brand-border">
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-indigo-400" />
+                <Filter className="w-4 h-4 text-brand-yellow" />
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                   Filters
                 </h3>
