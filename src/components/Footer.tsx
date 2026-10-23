@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen, ExternalLink, Heart } from 'lucide-react';
+import Image from 'next/image';
+import iconImg from '@/app/icon.png';
+import { ExternalLink, Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -10,8 +12,14 @@ export default function Footer() {
           {/* Brand info */}
           <div className="space-y-3 md:col-span-2">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-brand-yellow flex items-center justify-center text-black">
-                <BookOpen className="w-4 h-4 stroke-[2.5]" />
+              <div className="relative w-8 h-8 rounded-xl overflow-hidden shadow-sm">
+                <Image
+                  src={iconImg}
+                  alt="MangaPulse Icon"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-xl font-black text-white">
                 Manga<span className="text-brand-yellow">Pulse</span>
@@ -19,7 +27,7 @@ export default function Footer() {
             </Link>
             <p className="text-xs text-zinc-400 max-w-sm leading-relaxed">
               A modern, blazingly fast manga reader built with Next.js App Router, Tailwind CSS, and TypeScript.
-              Powered dynamically by AniList and MangaDex public APIs with zero web scraping.
+              Powered dynamically by AniList, MangaDex public APIs, scapes Mangapill, Weebcentral, Nettruyen. 
             </p>
           </div>
 
@@ -77,7 +85,7 @@ export default function Footer() {
 
         {/* Bottom copyright and disclaimer */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
-          <p>© {new Date().getFullYear()} MangaPulse. Built for educational & demo purposes.</p>
+          <p>© {new Date().getFullYear()} MangaPulse</p>
           <p className="flex items-center gap-1">
             Built with <Heart className="w-3.5 h-3.5 text-brand-yellow fill-brand-yellow" /> using Next.js & Tailwind
           </p>

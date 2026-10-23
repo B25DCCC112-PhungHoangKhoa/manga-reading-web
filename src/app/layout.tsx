@@ -5,8 +5,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'MangaPulse | Modern Manga Reader',
-  description: 'Fast, modern manga reader powered dynamically by AniList and MangaDex APIs.',
+  title: 'MangaPulse',
+  description: 'Fast, modern manga reader',
 };
 
 export default function RootLayout({

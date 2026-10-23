@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import iconImg from '@/app/icon.png';
 import { useRouter, usePathname } from 'next/navigation';
 import { BookOpen, Search, X, Star, Flame, Compass, SlidersHorizontal, Menu } from 'lucide-react';
 import { AniListManga } from '@/lib/types';
@@ -124,8 +125,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5 sm:gap-4">
         {/* Brand Logo matching MangaPulse Mobile */}
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-yellow flex items-center justify-center text-black shadow-md shadow-brand-yellow/20 group-hover:scale-105 transition-transform">
-            <BookOpen className="w-5 h-5 stroke-[2.5]" />
+          <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-brand-yellow/20 group-hover:scale-105 transition-transform">
+            <Image
+              src={iconImg}
+              alt="MangaPulse Icon"
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
           <div className="flex items-center">
             <span className="text-xl sm:text-2xl font-black tracking-tight text-white group-hover:opacity-90 transition-opacity">
