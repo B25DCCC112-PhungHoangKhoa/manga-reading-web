@@ -172,6 +172,20 @@ export function generateSearchQueries(titles: string[], targetLanguage?: 'vi' | 
     const norm = normalizeText(clean);
     if (norm) addQuery(norm);
 
+    // Title with hyphens replaced with spaces (important for hyphenated titles like Max-Level)
+    const spaceHyphen = clean.replace(/[-_–—]+/g, ' ');
+    const normSpaceHyphen = normalizeText(spaceHyphen);
+    if (normSpaceHyphen && normSpaceHyphen !== norm) {
+      addQuery(normSpaceHyphen);
+    }
+
+    // Title without leading articles / pronouns ("The", "A", "An", "I'm", "I am", "I")
+    const withoutLeading = clean.replace(/^(the|a|an|i'm|im|i am|i)\s+(the\s+)?/i, '').trim();
+    const normLeading = normalizeText(withoutLeading);
+    if (normLeading && normLeading !== norm) {
+      addQuery(normLeading);
+    }
+
     // If Vietnamese, also add unaccented variant
     if (isVietnamese(clean)) {
       const unaccented = removeVietnameseTones(norm);
@@ -180,14 +194,25 @@ export function generateSearchQueries(titles: string[], targetLanguage?: 'vi' | 
       }
     }
 
-    // Title without subtitle (e.g. before colon, hyphen, dash)
-    const strippedSub = clean.replace(/[:\-–—].*$/, '').trim();
+    // Title without subtitle (e.g. before colon, long dash)
+    const strippedSub = clean.replace(/[:–—].*$/, '').trim();
     const normSub = normalizeText(strippedSub);
     if (normSub && normSub !== norm && normSub.length >= 2) {
       addQuery(normSub);
       if (isVietnamese(strippedSub)) {
         const unaccSub = removeVietnameseTones(normSub);
         if (unaccSub && unaccSub !== normSub) addQuery(unaccSub);
+      }
+    }
+
+    // Significant content tokens without stopwords (e.g. ['max', 'level', 'newbie'])
+    const tokens = getTokens(clean);
+    if (tokens.length >= 2) {
+      const fullContent = tokens.join(' ');
+      addQuery(fullContent);
+
+      if (tokens.length >= 3) {
+        addQuery(tokens.slice(0, 2).join(' ')); // e.g. "solo max", "max level"
       }
     }
 

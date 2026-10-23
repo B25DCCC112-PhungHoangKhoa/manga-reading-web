@@ -22,7 +22,8 @@ export default async function ChapterReaderPage({ params, searchParams }: PagePr
   } catch (err: unknown) {
     console.error('Failed to load chapter pages:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
-    const isNetTruyen = chapterId.startsWith('nettruyen-');
+    const hasClientFallback =
+      chapterId.startsWith('nettruyen-') || chapterId.startsWith('weebcentral-');
     const chapterNumMatch =
       chapterId.match(/(?:chuong|chapter)-(\d+(?:\.\d+)?)/i) ||
       chapterId.match(/(\d+(?:\.\d+)?)$/);
@@ -33,7 +34,7 @@ export default async function ChapterReaderPage({ params, searchParams }: PagePr
       title: null,
       volume: null,
       externalUrl: null,
-      isUnavailable: !isNetTruyen,
+      isUnavailable: !hasClientFallback,
       errorMessage: `Could not load chapter pages: ${message}`,
       pages: [],
       total: 0,

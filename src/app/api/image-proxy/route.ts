@@ -20,6 +20,7 @@ const ALLOWED_HOST_SUFFIXES = [
   'comick.dev',
   'comick.app',
   'compsci88.com',
+  'planeptune.us',
   'lowee.us',
   'leanbox.us',
   'gamindustri.us',
@@ -139,6 +140,7 @@ function getRefererForUrl(targetUrl: string): string {
     // WeebCentral CDNs
     if (
       host.includes('weebcentral') ||
+      host.includes('planeptune') ||
       host.includes('leanbox') ||
       host.includes('compsci88') ||
       host.includes('lowee') ||

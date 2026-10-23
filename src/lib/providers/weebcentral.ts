@@ -36,17 +36,17 @@ function cleanTitle(raw: string): string {
     .toLowerCase();
 }
 
-const DEFAULT_PROXY = process.env.NEXT_PUBLIC_PROXY_URL || '';
+const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+const DEFAULT_PROXY = (
+  process.env.WEEBCENTRAL_PROXY_URL ||
+  process.env.CLOUDFLARE_PROXY_URL ||
+  process.env.PROXY_URL ||
+  process.env.NEXT_PUBLIC_PROXY_URL ||
+  FALLBACK_PROXY
+).trim();
 
 function buildProxiedUrl(targetUrl: string): string {
-  const proxy = (
-    process.env.WEEBCENTRAL_PROXY_URL ||
-    process.env.CLOUDFLARE_PROXY_URL ||
-    process.env.PROXY_URL ||
-    DEFAULT_PROXY
-  ).trim();
-  if (!proxy) return targetUrl;
-  const cleanProxy = proxy.replace(/\/+$/, '');
+  const cleanProxy = DEFAULT_PROXY.replace(/\/+$/, '');
   return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
 }
 
@@ -57,42 +57,27 @@ function buildProxiedUrl(targetUrl: string): string {
  * the stream instead of receiving raw compressed Brotli/gzip binary bytes.
  */
 async function fetchWeebcentral(url: string, referer: string): Promise<Response> {
-  const isOriginDown = (status: number) =>
-    status === 523 || status === 521 || status === 522 || status === 502 || status === 503 || status === 504;
-
-  // 1. Direct fetch (best if not blocked or running on dev/residential connection)
+  // 1. Direct fetch (best if running on residential connection or local dev)
   try {
     const res = await fetch(url, {
       headers: HTMX_HEADERS(referer),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(3500),
     });
     if (res.ok) {
       return res;
     }
-    if (isOriginDown(res.status)) {
-      console.warn(`WeebCentral origin is unreachable (HTTP ${res.status}). Aborting retries.`);
-      return res;
-    }
-    console.warn(`Direct WeebCentral fetch returned HTTP ${res.status} for ${url}`);
-  } catch (err) {
-    console.warn(`Direct WeebCentral fetch failed for ${url}:`, err);
-  }
+  } catch {}
 
-  // 2. Cloudflare worker proxy
+  // 2. Cloudflare worker proxy fallback
   try {
     const proxiedUrl = buildProxiedUrl(url);
     const res = await fetch(proxiedUrl, {
       headers: HTMX_HEADERS(referer),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(7000),
     });
     if (res.ok) {
       return res;
     }
-    if (isOriginDown(res.status)) {
-      console.warn(`Proxied WeebCentral origin is unreachable (HTTP ${res.status}).`);
-      return res;
-    }
-    console.warn(`Proxied WeebCentral fetch returned HTTP ${res.status} for ${url}`);
   } catch (err) {
     console.warn(`Proxied WeebCentral fetch failed for ${url}:`, err);
   }
@@ -108,11 +93,11 @@ async function fetchWeebcentral(url: string, referer: string): Promise<Response>
  * Search WeebCentral for a manga by title
  */
 export async function searchWeebcentral(titles: string[]): Promise<string | null> {
-  const cacheKey = `weebcentral:search:v4:${titles.join(':')}`;
+  const cacheKey = `weebcentral:search:v5:${titles.join(':')}`;
   return getOrSetCache(cacheKey, 86400, async () => {
     const queries = generateSearchQueries(titles, 'en');
 
-    for (const q of queries.slice(0, 5)) {
+    for (const q of queries.slice(0, 8)) {
       if (!q || q.length < 2) continue;
 
       try {
@@ -123,10 +108,6 @@ export async function searchWeebcentral(titles: string[]): Promise<string | null
         const res = await fetchWeebcentral(url, `${BASE_URL}/search`);
 
         if (!res.ok) {
-          console.error(`WeebCentral search error for "${q}": HTTP ${res.status}`);
-          if (res.status === 523 || res.status === 521 || res.status >= 500) {
-            break;
-          }
           continue;
         }
 

@@ -1,12 +1,22 @@
 import { MangaDexChapter } from '../types';
 import { isTitleMatch, generateSearchQueries } from './matcher';
 
-const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL || '';
+const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+const PROXY_URL = (process.env.NEXT_PUBLIC_PROXY_URL || FALLBACK_PROXY).trim();
 const BASE_URL = 'https://weebcentral.com';
+const FIREFOX_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0';
+
+const CLIENT_HEADERS = (referer = 'https://weebcentral.com'): Record<string, string> => ({
+  'User-Agent': FIREFOX_UA,
+  'HX-Request': 'true',
+  Referer: referer,
+  Accept: 'text/html, */*; q=0.01',
+});
 
 function buildUrl(target: string): string {
-  if (!PROXY_URL) return target;
-  return `${PROXY_URL}/?url=${encodeURIComponent(target)}`;
+  const cleanProxy = PROXY_URL.replace(/\/+$/, '');
+  return `${cleanProxy}/?url=${encodeURIComponent(target)}`;
 }
 
 /**
@@ -16,7 +26,7 @@ function buildUrl(target: string): string {
 export async function searchWeebcentralClient(titles: string[]): Promise<string | null> {
   const candidateQueries = generateSearchQueries(titles, 'en');
 
-  for (const q of candidateQueries.slice(0, 5)) {
+  for (const q of candidateQueries.slice(0, 8)) {
     if (!q || q.length < 2) continue;
 
     try {
@@ -27,14 +37,11 @@ export async function searchWeebcentralClient(titles: string[]): Promise<string 
       );
 
       const res = await fetch(searchUrl, {
-        signal: AbortSignal.timeout(4000),
+        headers: CLIENT_HEADERS('https://weebcentral.com/search'),
+        signal: AbortSignal.timeout(6000),
       });
 
       if (!res.ok) {
-        if (res.status === 523 || res.status === 521 || res.status >= 500) {
-          console.warn(`WeebCentral server is down (HTTP ${res.status}). Aborting client search.`);
-          break;
-        }
         continue;
       }
 
@@ -74,6 +81,7 @@ export async function fetchWeebcentralChaptersForSeriesClient(
   try {
     const chaptersUrl = buildUrl(`${BASE_URL}/series/${seriesId}/full-chapter-list`);
     const res = await fetch(chaptersUrl, {
+      headers: CLIENT_HEADERS(`${BASE_URL}/series/${seriesId}`),
       signal: AbortSignal.timeout(10000),
     });
 
@@ -178,7 +186,10 @@ export async function fetchWeebcentralChapterPagesClient(
     let html = '';
     for (const url of candidateUrls) {
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        const res = await fetch(url, {
+          headers: CLIENT_HEADERS(`${BASE_URL}/chapters/${cleanId}`),
+          signal: AbortSignal.timeout(8000),
+        });
         if (res.ok) {
           const text = await res.text();
           if (text.includes('<img')) {
