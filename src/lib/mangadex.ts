@@ -21,7 +21,7 @@ export {
 };
 
 const MANGADEX_API = 'https://api.mangadex.org';
-const USER_AGENT = 'MangaWeb/1.0 (https://github.com/B25DCCC112-PhungHoangKhoa/manga-reading-web)';
+const USER_AGENT = process.env.MANGADEX_USER_AGENT || 'MangaWeb/1.0 (https://github.com/mangaweb)';
 
 interface MangaDexApiResponse<T> {
   result: string;

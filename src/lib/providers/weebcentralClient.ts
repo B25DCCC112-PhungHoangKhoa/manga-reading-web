@@ -1,10 +1,11 @@
 import { MangaDexChapter } from '../types';
 import { isTitleMatch, generateSearchQueries } from './matcher';
 
-const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
+const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL || '';
 const BASE_URL = 'https://weebcentral.com';
 
 function buildUrl(target: string): string {
+  if (!PROXY_URL) return target;
   return `${PROXY_URL}/?url=${encodeURIComponent(target)}`;
 }
 

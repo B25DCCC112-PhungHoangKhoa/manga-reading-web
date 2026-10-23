@@ -1330,9 +1330,9 @@ export default function ChapterReader({
                   }}
                   onError={(e) => {
                     const target = e.currentTarget;
-                    if (page.originalUrl && !target.dataset.triedWorker) {
+                    const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || '';
+                    if (proxyBase && page.originalUrl && !target.dataset.triedWorker) {
                       target.dataset.triedWorker = 'true';
-                      const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
                       target.src = `${proxyBase}/?url=${encodeURIComponent(page.originalUrl)}`;
                     }
                   }}
@@ -1375,9 +1375,9 @@ export default function ChapterReader({
                   onError={(e) => {
                     const target = e.currentTarget;
                     const original = pages[currentPageIndex]?.originalUrl;
-                    if (original && !target.dataset.triedWorker) {
+                    const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || '';
+                    if (proxyBase && original && !target.dataset.triedWorker) {
                       target.dataset.triedWorker = 'true';
-                      const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
                       target.src = `${proxyBase}/?url=${encodeURIComponent(original)}`;
                     }
                   }}

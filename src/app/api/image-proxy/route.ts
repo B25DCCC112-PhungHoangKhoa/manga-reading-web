@@ -244,18 +244,20 @@ export async function GET(request: NextRequest) {
       // If still blocked, attempt through Cloudflare worker proxy
       if (!upstreamRes.ok) {
         try {
-          const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || process.env.PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
-          const workerUrl = `${proxyBase}/?url=${encodeURIComponent(targetUrl)}`;
-          const workerRes = await fetch(workerUrl, {
-            headers: {
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-              Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-            },
-            signal: AbortSignal.timeout(6000),
-          });
-          if (workerRes.ok) {
-            upstreamRes = workerRes;
+          const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || process.env.PROXY_URL || '';
+          if (proxyBase) {
+            const workerUrl = `${proxyBase}/?url=${encodeURIComponent(targetUrl)}`;
+            const workerRes = await fetch(workerUrl, {
+              headers: {
+                'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+              },
+              signal: AbortSignal.timeout(6000),
+            });
+            if (workerRes.ok) {
+              upstreamRes = workerRes;
+            }
           }
         } catch {
           // Ignore worker fallback error and proceed to final response check

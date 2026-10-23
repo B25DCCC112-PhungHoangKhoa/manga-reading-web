@@ -14,15 +14,15 @@ export interface NetTruyenMatch {
   title: string;
 }
 
-const DEFAULT_PROXY = process.env.NEXT_PUBLIC_PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
+const DEFAULT_PROXY = process.env.NEXT_PUBLIC_PROXY_URL || '';
 
 function buildProxiedUrl(targetUrl: string): string {
   const proxy = (
     process.env.CLOUDFLARE_PROXY_URL ||
-    process.env.CLOUDFLARE_PROXY_UR ||
     process.env.PROXY_URL ||
     DEFAULT_PROXY
   ).trim();
+  if (!proxy) return targetUrl;
   const cleanProxy = proxy.replace(/\/+$/, '');
   return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
 }
