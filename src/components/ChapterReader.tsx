@@ -100,6 +100,148 @@ function computeNavigation(
   };
 }
 
+interface MangaPageItemProps {
+  page: { pageNumber: number; url: string; originalUrl?: string };
+  index: number;
+  readingMode: 'vertical' | 'single';
+  isEager: boolean;
+  isHighPriority?: boolean;
+  onIntersectRef?: (el: HTMLDivElement | null) => void;
+  className?: string;
+}
+
+function MangaPageItem({
+  page,
+  index,
+  readingMode,
+  isEager,
+  isHighPriority,
+  onIntersectRef,
+  className = '',
+}: MangaPageItemProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(page.url);
+  const [hasTriedWorker, setHasTriedWorker] = useState(false);
+  const [hasFailed, setHasFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Sync state if page.url changes (e.g. switching provider / chapter)
+  useEffect(() => {
+    setCurrentSrc(page.url);
+    setIsLoaded(false);
+    setHasTriedWorker(false);
+    setHasFailed(false);
+  }, [page.url]);
+
+  // Check if image is already cached or completed by browser on mount / render
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setIsLoaded(true);
+    }
+  }, [currentSrc]);
+
+  const handleLoad = () => {
+    setIsLoaded(true);
+  };
+
+  const handleError = () => {
+    const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || '';
+    if (proxyBase && page.originalUrl && !hasTriedWorker) {
+      setHasTriedWorker(true);
+      setCurrentSrc(`${proxyBase}/?url=${encodeURIComponent(page.originalUrl)}`);
+    } else {
+      setHasFailed(true);
+      setIsLoaded(true); // Stop flashing loader on permanent error
+    }
+  };
+
+  if (readingMode === 'single') {
+    return (
+      <div className="relative w-full flex items-center justify-center min-h-[500px] bg-brand-bg">
+        {/* Placeholder shown only until image loads */}
+        {!isLoaded && !hasFailed && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-card/70 animate-pulse text-zinc-500 text-xs font-semibold gap-2 z-10">
+            <div className="w-6 h-6 border-2 border-brand-yellow/40 border-t-brand-yellow rounded-full animate-spin" />
+            <span>Loading page {page.pageNumber}...</span>
+          </div>
+        )}
+
+        {hasFailed ? (
+          <div className="p-8 text-center text-rose-400 text-xs font-semibold">
+            Failed to load page {page.pageNumber}
+          </div>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            ref={imgRef}
+            src={currentSrc}
+            alt={`Page ${page.pageNumber}`}
+            className={`max-h-[92vh] w-auto max-w-full object-contain mx-auto shadow-2xl rounded-sm transition-opacity duration-300 ${
+              isLoaded ? 'opacity-100' : 'opacity-0'
+            } ${className}`}
+            loading={isEager ? 'eager' : 'lazy'}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Vertical (Webtoon) mode
+  return (
+    <div
+      ref={onIntersectRef}
+      data-page-index={index}
+      className="w-full relative bg-brand-bg flex flex-col items-center"
+    >
+      {/* Placeholder shown only until image loads */}
+      {!isLoaded && !hasFailed && (
+        <div className="w-full h-[500px] flex flex-col items-center justify-center bg-brand-card/40 text-zinc-500 text-xs font-semibold gap-2">
+          <div className="w-6 h-6 border-2 border-brand-yellow/40 border-t-brand-yellow rounded-full animate-spin" />
+          <span>Loading page {page.pageNumber}...</span>
+        </div>
+      )}
+
+      {hasFailed ? (
+        <div className="w-full py-16 flex flex-col items-center justify-center bg-brand-card/30 border border-zinc-800/60 rounded-xl my-2 text-zinc-400 text-xs gap-2">
+          <span className="text-rose-400 font-semibold">Could not load page {page.pageNumber}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setHasFailed(false);
+              setIsLoaded(false);
+              const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || '';
+              if (proxyBase && page.originalUrl) {
+                setCurrentSrc(`${proxyBase}/?url=${encodeURIComponent(page.originalUrl)}&retry=${Date.now()}`);
+              } else {
+                setCurrentSrc(`${page.url}?retry=${Date.now()}`);
+              }
+            }}
+            className="px-3 py-1.5 rounded-lg bg-brand-card hover:bg-brand-card-light text-zinc-300 hover:text-white border border-brand-border text-[11px] font-bold"
+          >
+            Retry Page
+          </button>
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          ref={imgRef}
+          src={currentSrc}
+          alt={`Page ${page.pageNumber}`}
+          className={`w-full h-auto block select-none pointer-events-auto shadow-md transition-opacity duration-300 ${
+            isLoaded ? 'opacity-100' : 'hidden'
+          } ${className}`}
+          loading={isEager ? 'eager' : 'lazy'}
+          fetchPriority={isHighPriority ? 'high' : undefined}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
+    </div>
+  );
+}
+
 interface ChapterReaderProps {
   initialData: ChapterPagesResponse;
   mangaId?: string;
@@ -128,9 +270,6 @@ export default function ChapterReader({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showBars, setShowBars] = useState(true);
   const [widthMode, setWidthMode] = useState<'fit' | 'medium' | 'full'>('medium');
-
-  // Track page image load status
-  const [loadedPages, setLoadedPages] = useState<Record<number, boolean>>({});
 
   // Chapter Navigation State
   const [navData, setNavData] = useState<NavData | null>(null);
@@ -193,7 +332,6 @@ export default function ChapterReader({
 
     setPages(initialData.pages || []);
     setCurrentPageIndex(0);
-    setLoadedPages({});
     window.scrollTo({ top: 0, behavior: 'instant' });
 
     if (!hasInitialPages && isNetTruyenChapter) {
@@ -1304,40 +1442,17 @@ export default function ChapterReader({
           /* CONTINUOUS VERTICAL SCROLL MODE (WEBTOON STYLE) */
           <div className="w-full flex flex-col items-center gap-1">
             {pages.map((page, index) => (
-              <div
-                key={page.pageNumber}
-                ref={(el) => {
+              <MangaPageItem
+                key={`${initialData.chapterId}-${page.pageNumber}`}
+                page={page}
+                index={index}
+                readingMode="vertical"
+                isEager={index <= 2}
+                isHighPriority={index === 0}
+                onIntersectRef={(el) => {
                   pageRefs.current[index] = el;
                 }}
-                data-page-index={index}
-                className="w-full relative bg-zinc-900/50 flex flex-col items-center min-h-[400px]"
-              >
-                {/* Skeleton shimmer while loading */}
-                {!loadedPages[index] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 animate-pulse text-zinc-600 text-xs font-medium">
-                    Loading page {page.pageNumber}...
-                  </div>
-                )}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={page.url}
-                  alt={`Page ${page.pageNumber}`}
-                  className="w-full h-auto block select-none pointer-events-auto shadow-md"
-                  loading={index <= 2 ? 'eager' : 'lazy'}
-                  fetchPriority={index === 0 ? 'high' : undefined}
-                  onLoad={() => {
-                    setLoadedPages((prev) => ({ ...prev, [index]: true }));
-                  }}
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || '';
-                    if (proxyBase && page.originalUrl && !target.dataset.triedWorker) {
-                      target.dataset.triedWorker = 'true';
-                      target.src = `${proxyBase}/?url=${encodeURIComponent(page.originalUrl)}`;
-                    }
-                  }}
-                />
-              </div>
+              />
             ))}
           </div>
         ) : (
@@ -1358,31 +1473,13 @@ export default function ChapterReader({
             }}
           >
             {pages[currentPageIndex] && (
-              <div className="relative w-full flex items-center justify-center min-h-[600px] bg-zinc-950">
-                {!loadedPages[currentPageIndex] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 animate-pulse text-zinc-600 text-xs">
-                    Loading page {currentPageIndex + 1}...
-                  </div>
-                )}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={pages[currentPageIndex].url}
-                  alt={`Page ${currentPageIndex + 1}`}
-                  className="max-h-[92vh] w-auto max-w-full object-contain mx-auto shadow-2xl rounded-sm"
-                  onLoad={() => {
-                    setLoadedPages((prev) => ({ ...prev, [currentPageIndex]: true }));
-                  }}
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    const original = pages[currentPageIndex]?.originalUrl;
-                    const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || '';
-                    if (proxyBase && original && !target.dataset.triedWorker) {
-                      target.dataset.triedWorker = 'true';
-                      target.src = `${proxyBase}/?url=${encodeURIComponent(original)}`;
-                    }
-                  }}
-                />
-              </div>
+              <MangaPageItem
+                key={`${initialData.chapterId}-${pages[currentPageIndex].pageNumber}`}
+                page={pages[currentPageIndex]}
+                index={currentPageIndex}
+                readingMode="single"
+                isEager={true}
+              />
             )}
 
             {/* Click navigation overlays */}
