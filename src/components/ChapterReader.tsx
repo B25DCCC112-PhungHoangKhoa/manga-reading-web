@@ -193,7 +193,7 @@ function MangaPageItem({
     <div
       ref={onIntersectRef}
       data-page-index={index}
-      className="w-full relative bg-brand-bg flex flex-col items-center"
+      className="w-full relative bg-brand-bg flex flex-col items-center min-h-[300px]"
     >
       {/* Placeholder shown only until image loads */}
       {!isLoaded && !hasFailed && (
@@ -230,7 +230,7 @@ function MangaPageItem({
           src={currentSrc}
           alt={`Page ${page.pageNumber}`}
           className={`w-full h-auto block select-none pointer-events-auto shadow-md transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100' : 'hidden'
+            !isLoaded ? 'opacity-0 absolute inset-0 pointer-events-none' : 'opacity-100'
           } ${className}`}
           loading={isEager ? 'eager' : 'lazy'}
           fetchPriority={isHighPriority ? 'high' : undefined}
@@ -1447,7 +1447,7 @@ export default function ChapterReader({
                 page={page}
                 index={index}
                 readingMode="vertical"
-                isEager={index <= 2}
+                isEager={index <= 4 || Math.abs(index - currentPageIndex) <= 3}
                 isHighPriority={index === 0}
                 onIntersectRef={(el) => {
                   pageRefs.current[index] = el;
