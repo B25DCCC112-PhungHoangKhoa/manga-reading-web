@@ -6,18 +6,21 @@ const BASE_URL = 'https://mangapill.com';
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
-const DEFAULT_PROXY = (
-  process.env.MANGAPILL_PROXY_URL ||
-  process.env.CLOUDFLARE_PROXY_URL ||
-  process.env.PROXY_URL ||
-  process.env.NEXT_PUBLIC_PROXY_URL ||
-  FALLBACK_PROXY
-).trim();
+function getProxyUrl(): string {
+  const proxy = (
+    process.env.CLOUDFLARE_PROXY_URL ||
+    process.env.NEXT_PUBLIC_PROXY_URL ||
+    process.env.MANGAPILL_PROXY_URL ||
+    process.env.PROXY_URL ||
+    ''
+  ).trim();
+  return proxy.replace(/\/+$/, '');
+}
 
 function buildProxiedUrl(targetUrl: string): string {
-  const cleanProxy = DEFAULT_PROXY.replace(/\/+$/, '');
-  return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
+  const proxy = getProxyUrl();
+  if (!proxy) return targetUrl;
+  return `${proxy}/?url=${encodeURIComponent(targetUrl)}`;
 }
 
 async function fetchMangaPill(url: string, referer = BASE_URL): Promise<Response> {
@@ -32,12 +35,15 @@ async function fetchMangaPill(url: string, referer = BASE_URL): Promise<Response
     if (res.ok) return res;
   } catch {}
 
-  try {
-    const proxiedUrl = buildProxiedUrl(url);
-    const res = await fetch(proxiedUrl, { headers, signal: AbortSignal.timeout(7000) });
-    if (res.ok) return res;
-  } catch (err) {
-    console.warn(`Proxied MangaPill fetch failed for ${url}:`, err);
+  const proxy = getProxyUrl();
+  if (proxy) {
+    try {
+      const proxiedUrl = buildProxiedUrl(url);
+      const res = await fetch(proxiedUrl, { headers, signal: AbortSignal.timeout(7000) });
+      if (res.ok) return res;
+    } catch (err) {
+      console.warn(`Proxied MangaPill fetch failed for ${url}:`, err);
+    }
   }
 
   return new Response('MangaPill server unreachable', { status: 523 });

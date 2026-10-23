@@ -1,11 +1,17 @@
 import { MangaDexChapter } from '../types';
 import { isTitleMatch, generateSearchQueries } from './matcher';
 
-const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
-const PROXY_URL = (process.env.NEXT_PUBLIC_PROXY_URL || FALLBACK_PROXY).trim();
+const PROXY_URL = (
+  process.env.CLOUDFLARE_PROXY_URL ||
+  process.env.NEXT_PUBLIC_PROXY_URL ||
+  process.env.NEXT_PUBLIC_CLOUDFLARE_PROXY_URL ||
+  process.env.PROXY_URL ||
+  ''
+).trim();
 const BASE_URL = 'https://nettruyen.gg';
 
 function buildUrl(target: string): string {
+  if (!PROXY_URL) return target;
   const cleanProxy = PROXY_URL.replace(/\/+$/, '');
   return `${cleanProxy}/?url=${encodeURIComponent(target)}`;
 }

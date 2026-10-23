@@ -14,18 +14,21 @@ export interface NetTruyenMatch {
   title: string;
 }
 
-const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
-const DEFAULT_PROXY = (
-  process.env.NETTRUYEN_PROXY_URL ||
-  process.env.CLOUDFLARE_PROXY_URL ||
-  process.env.PROXY_URL ||
-  process.env.NEXT_PUBLIC_PROXY_URL ||
-  FALLBACK_PROXY
-).trim();
+function getProxyUrl(): string {
+  const proxy = (
+    process.env.CLOUDFLARE_PROXY_URL ||
+    process.env.NEXT_PUBLIC_PROXY_URL ||
+    process.env.NETTRUYEN_PROXY_URL ||
+    process.env.PROXY_URL ||
+    ''
+  ).trim();
+  return proxy.replace(/\/+$/, '');
+}
 
 function buildProxiedUrl(targetUrl: string): string {
-  const cleanProxy = DEFAULT_PROXY.replace(/\/+$/, '');
-  return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
+  const proxy = getProxyUrl();
+  if (!proxy) return targetUrl;
+  return `${proxy}/?url=${encodeURIComponent(targetUrl)}`;
 }
 
 /**

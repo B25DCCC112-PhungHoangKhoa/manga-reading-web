@@ -1,8 +1,13 @@
 import { MangaDexChapter } from '../types';
 import { isTitleMatch, generateSearchQueries } from './matcher';
 
-const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
-const PROXY_URL = (process.env.NEXT_PUBLIC_PROXY_URL || FALLBACK_PROXY).trim();
+const PROXY_URL = (
+  process.env.CLOUDFLARE_PROXY_URL ||
+  process.env.NEXT_PUBLIC_PROXY_URL ||
+  process.env.NEXT_PUBLIC_CLOUDFLARE_PROXY_URL ||
+  process.env.PROXY_URL ||
+  ''
+).trim();
 const BASE_URL = 'https://weebcentral.com';
 const FIREFOX_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0';
@@ -15,6 +20,7 @@ const CLIENT_HEADERS = (referer = 'https://weebcentral.com'): Record<string, str
 });
 
 function buildUrl(target: string): string {
+  if (!PROXY_URL) return target;
   const cleanProxy = PROXY_URL.replace(/\/+$/, '');
   return `${cleanProxy}/?url=${encodeURIComponent(target)}`;
 }

@@ -36,18 +36,21 @@ function cleanTitle(raw: string): string {
     .toLowerCase();
 }
 
-const FALLBACK_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
-const DEFAULT_PROXY = (
-  process.env.WEEBCENTRAL_PROXY_URL ||
-  process.env.CLOUDFLARE_PROXY_URL ||
-  process.env.PROXY_URL ||
-  process.env.NEXT_PUBLIC_PROXY_URL ||
-  FALLBACK_PROXY
-).trim();
+function getProxyUrl(): string {
+  const proxy = (
+    process.env.CLOUDFLARE_PROXY_URL ||
+    process.env.NEXT_PUBLIC_PROXY_URL ||
+    process.env.WEEBCENTRAL_PROXY_URL ||
+    process.env.PROXY_URL ||
+    ''
+  ).trim();
+  return proxy.replace(/\/+$/, '');
+}
 
 function buildProxiedUrl(targetUrl: string): string {
-  const cleanProxy = DEFAULT_PROXY.replace(/\/+$/, '');
-  return `${cleanProxy}/?url=${encodeURIComponent(targetUrl)}`;
+  const proxy = getProxyUrl();
+  if (!proxy) return targetUrl;
+  return `${proxy}/?url=${encodeURIComponent(targetUrl)}`;
 }
 
 /**
@@ -57,6 +60,8 @@ function buildProxiedUrl(targetUrl: string): string {
  * the stream instead of receiving raw compressed Brotli/gzip binary bytes.
  */
 async function fetchWeebcentral(url: string, referer: string): Promise<Response> {
+  const proxy = getProxyUrl();
+
   // 1. Direct fetch (best if running on residential connection or local dev)
   try {
     const res = await fetch(url, {
@@ -69,17 +74,19 @@ async function fetchWeebcentral(url: string, referer: string): Promise<Response>
   } catch {}
 
   // 2. Cloudflare worker proxy fallback
-  try {
-    const proxiedUrl = buildProxiedUrl(url);
-    const res = await fetch(proxiedUrl, {
-      headers: HTMX_HEADERS(referer),
-      signal: AbortSignal.timeout(7000),
-    });
-    if (res.ok) {
-      return res;
+  if (proxy) {
+    try {
+      const proxiedUrl = buildProxiedUrl(url);
+      const res = await fetch(proxiedUrl, {
+        headers: HTMX_HEADERS(referer),
+        signal: AbortSignal.timeout(7000),
+      });
+      if (res.ok) {
+        return res;
+      }
+    } catch (err) {
+      console.warn(`Proxied WeebCentral fetch failed for ${url}:`, err);
     }
-  } catch (err) {
-    console.warn(`Proxied WeebCentral fetch failed for ${url}:`, err);
   }
 
   // Fast fail response instead of hanging indefinitely

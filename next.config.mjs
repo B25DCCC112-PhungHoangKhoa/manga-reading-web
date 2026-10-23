@@ -3,8 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   env: {
     NEXT_PUBLIC_PROXY_URL:
+      process.env.CLOUDFLARE_PROXY_URL ||
       process.env.NEXT_PUBLIC_PROXY_URL ||
-      'https://manga-proxy.phungvanquangdmx.workers.dev',
+      process.env.NEXT_PUBLIC_CLOUDFLARE_PROXY_URL ||
+      process.env.PROXY_URL ||
+      '',
   },
   images: {
     remotePatterns: [
