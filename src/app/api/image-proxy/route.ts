@@ -244,7 +244,8 @@ export async function GET(request: NextRequest) {
       // If still blocked, attempt through Cloudflare worker proxy
       if (!upstreamRes.ok) {
         try {
-          const workerUrl = `https://manga-proxy.phungvanquangdmx.workers.dev/?url=${encodeURIComponent(targetUrl)}`;
+          const proxyBase = process.env.NEXT_PUBLIC_PROXY_URL || process.env.PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
+          const workerUrl = `${proxyBase}/?url=${encodeURIComponent(targetUrl)}`;
           const workerRes = await fetch(workerUrl, {
             headers: {
               'User-Agent':

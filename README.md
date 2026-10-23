@@ -142,3 +142,4 @@ npm start
 ## 📜 License
 
 This project is built for educational and portfolio demonstration purposes. All manga content and artwork belong to their respective copyright owners and creators.
+

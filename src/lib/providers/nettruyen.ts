@@ -14,7 +14,7 @@ export interface NetTruyenMatch {
   title: string;
 }
 
-const DEFAULT_PROXY = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+const DEFAULT_PROXY = process.env.NEXT_PUBLIC_PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
 
 function buildProxiedUrl(targetUrl: string): string {
   const proxy = (

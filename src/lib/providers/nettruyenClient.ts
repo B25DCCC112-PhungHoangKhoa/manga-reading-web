@@ -1,7 +1,7 @@
 import { MangaDexChapter } from '../types';
 import { isTitleMatch, generateSearchQueries } from './matcher';
 
-const PROXY_URL = 'https://manga-proxy.phungvanquangdmx.workers.dev';
+const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL || 'https://manga-proxy.phungvanquangdmx.workers.dev';
 const BASE_URL = 'https://nettruyen.gg';
 
 function buildUrl(target: string): string {
