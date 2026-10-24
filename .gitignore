@@ -15,3 +15,10 @@ yarn-error.log*
 .env.*
 !.env.example
 
+# agent skills & archify artifacts
+.agents/
+skills-lock.json
+.archify/
+docs/archify/
+
+
