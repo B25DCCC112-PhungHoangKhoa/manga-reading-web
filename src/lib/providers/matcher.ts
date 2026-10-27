@@ -61,27 +61,35 @@ function checkMatchTokens(candTokens: string[], targetTokens: string[], normCand
 
   // 3. Single token target (e.g. "Bleach", "Berserk", "Naruto")
   if (targetTokens.length === 1) {
-    if (candTokens[0] === targetTokens[0] && candTokens.length <= 4) return true;
-    if (candTokens.includes(targetTokens[0]) && candTokens.length <= 3) return true;
+    if (candTokens[0] === targetTokens[0] && candTokens.length <= 3) return true;
+    if (candTokens.includes(targetTokens[0]) && candTokens.length <= 2) return true;
     return false;
   }
 
-  // 4. Token containment check
+  // 4. Consecutive sub-phrase sequence match
+  // e.g. target "One Piece" inside candidate "One Piece (Official Colored)"
+  const candJoined = candTokens.join(' ');
+  const targetJoined = targetTokens.join(' ');
+  if (targetJoined.includes(candJoined) && (candTokens.length / targetTokens.length) >= 0.6) {
+    return true;
+  }
+  if (candJoined.includes(targetJoined) && (targetTokens.length / candTokens.length) >= 0.5) {
+    return true;
+  }
+
+  // 5. Token containment check
   const candSet = new Set(candTokens);
   let shared = 0;
   for (const t of targetTokens) {
     if (candSet.has(t)) shared++;
   }
 
-  // If candidate contains all target tokens (e.g. target is "One Piece", candidate is "One Piece - Digital Colored")
+  // Candidate contains all target tokens (e.g. target is "One Piece", candidate is "One Piece - Digital Colored")
   if (shared === targetTokens.length && targetTokens.length >= 2) return true;
-  // If target contains all candidate tokens
-  if (shared === candTokens.length && candTokens.length >= 2) return true;
 
-  // 5. Overlap ratio check: requires high similarity to reject partial coincidences
-  const minLen = Math.min(targetTokens.length, candTokens.length);
+  // High-coverage unordered overlap: requires at least 3 shared tokens and high coverage (>= 75%)
   const maxLen = Math.max(targetTokens.length, candTokens.length);
-  if (minLen >= 2 && (shared / minLen) >= 0.75 && (shared / maxLen) >= 0.5) {
+  if (shared >= 3 && (shared / maxLen) >= 0.75) {
     return true;
   }
 
@@ -161,9 +169,11 @@ export function generateSearchQueries(titles: string[], targetLanguage?: 'vi' | 
     }
   }
 
+  // For Vietnamese sources (NetTruyen), interleave canonical English titles first
+  // so worldwide recognized titles (One Piece, Naruto, Bleach, etc.) are searched directly
   let orderedTitles: string[];
   if (targetLanguage === 'vi') {
-    orderedTitles = [...viTitles, ...enTitles, ...otherLatinTitles, ...nonLatinTitles];
+    orderedTitles = [...enTitles.slice(0, 1), ...viTitles, ...enTitles.slice(1), ...otherLatinTitles, ...nonLatinTitles];
   } else {
     orderedTitles = [...enTitles, ...otherLatinTitles, ...viTitles, ...nonLatinTitles];
   }
@@ -211,8 +221,9 @@ export function generateSearchQueries(titles: string[], targetLanguage?: 'vi' | 
       const fullContent = tokens.join(' ');
       addQuery(fullContent);
 
-      if (tokens.length >= 3) {
-        addQuery(tokens.slice(0, 2).join(' ')); // e.g. "solo max", "max level"
+      // Only generate 3-token prefixes for very long titles (>= 5 tokens) to avoid false-positive collisions
+      if (tokens.length >= 5) {
+        addQuery(tokens.slice(0, 3).join(' '));
       }
     }
 

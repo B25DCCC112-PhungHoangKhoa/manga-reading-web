@@ -2,20 +2,16 @@ import { MangaDexChapter } from '../types';
 import { isTitleMatch, generateSearchQueries } from './matcher';
 
 const PROXY_URL = (
-  process.env.CLOUDFLARE_PROXY_URL ||
   process.env.NEXT_PUBLIC_PROXY_URL ||
+  process.env.CLOUDFLARE_PROXY_URL ||
   process.env.NEXT_PUBLIC_CLOUDFLARE_PROXY_URL ||
   process.env.PROXY_URL ||
   ''
 ).trim();
 const BASE_URL = 'https://weebcentral.com';
-const FIREFOX_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0';
 
-const CLIENT_HEADERS = (referer = 'https://weebcentral.com'): Record<string, string> => ({
-  'User-Agent': FIREFOX_UA,
+const CLIENT_HEADERS = (_referer?: string): Record<string, string> => ({
   'HX-Request': 'true',
-  Referer: referer,
   Accept: 'text/html, */*; q=0.01',
 });
 
